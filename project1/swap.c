@@ -11,7 +11,7 @@ int main(int argc, char **argv){
     scanf("%d", &pr_id);
     scanf("%d", &mem_size);
     scanf("%d", &job_time);
-    printf("%d, %d, %d, %d\n",time_cr, pr_id, mem_size, job_time);
+    /*printf("%d, %d, %d, %d\n",time_cr, pr_id, mem_size, job_time);*/
   }
   return 0;
 }
