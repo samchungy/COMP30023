@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <unistd.h>
 
 typedef struct process_t{
   int time_cr;
@@ -15,3 +16,4 @@ typedef struct node_t{
 } node_t;
 
 node_t * read_to_disk(int, int, int, int, node_t *);
+void print_disk(node_t *);
