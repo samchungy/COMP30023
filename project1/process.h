@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <unistd.h>
+
 
 typedef struct process_t{
   int time_cr;
@@ -10,10 +10,22 @@ typedef struct process_t{
   int job_time;
 }process_t;
 
-typedef struct node_t{
+typedef struct pronode_t{
   process_t process;
-  struct node_t *next;
+  struct pronode_t *next;
+} pronode_t;
+
+typedef struct list_t{
+  node_t start;
+  int data_free;
+} list_t;
+
+typedef struct node_t{
+  pronode_t process;
+  int start;
+  int end;
+  node_t next;
 } node_t;
 
-node_t * read_to_disk(int, int, int, int, node_t *);
-void print_disk(node_t *);
+pronode_t * read_to_disk(int, int, int, int, pronode_t *);
+void print_disk(pronode_t *);
