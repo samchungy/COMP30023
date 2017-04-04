@@ -18,22 +18,22 @@ list_t * algo_select(pronode_t *proc, char *algoname, list_t *memory){
 }
 
 list_t * add_first(pronode_t *proc, char *algoname, list_t *memory){
-  if (memory.data_free<proc.mem_size){
+  if (memory->data_free<proc->mem_size){
     /*Shortcut to no data free*/
     /*set fail status*/
     return memory;
   }
-node_t *new;
-new = malloc(sizeof(node_t));
-assert(new!=NULL);
-new.size = proc.mem_size;
-new.next = NULL;
-node_t *curr = memory.free_head;
+int new = proc->mem_size;
+node_t *curr = memory->free_head;
 
 while(curr != NULL){
-  if (new.size < curr.size){
+  if (new->size < curr->size){
     /*Found memory space!*/
-    curr.
+    new->start = curr->start;
+    new->end = new->start + ((new->size)-1);
+    curr->start = new->end;
+    curr->end = curr->start + (curr->size-((new->size)-1));
+    memory = add_to_process_list(proc, memory);
   }
   else{
     /*Memory space is too small*/
@@ -45,10 +45,11 @@ return memory;
 
 }
 
-node_t * add_proccess_to_memory(node_t *new, node_t *curr){
-  new.start = curr.start;
-  new.end = new.start + (new.size-1);
-  curr.start = new.end;
-  curr.end = curr.start + (curr.size-new.size-1);
-
+list_t * add_to_process_list(pronode_t *proc, list_t *memory){
+  pronode_t *curr = memory->pro_head;
+  while(curr->next!=NULL){
+    curr=curr->next;
+  }
+  curr->next = proc;
+  return memory;
 }

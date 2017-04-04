@@ -22,15 +22,15 @@ void start_simulation(char *algoname, int mem_size, int quantum,
   list_t *memory;
   memory = malloc(sizeof(list_t));
   assert(memory != NULL);
-  memory.data_free = mem_size;
-  memory.pro_head = NULL;
+  memory->data_free = mem_size;
+  memory->pro_head = NULL;
   node_t *freemem = mem_size;
   freemem = malloc(sizeof(node_t));
   assert(freemem != NULL);
-  free_head.start = STARTMEMORY;
-  free_head.end = mem_size;
-  free_head.size = mem_size;
-  memory.free_head = freemem;
+  free_head->start = STARTMEMORY;
+  free_head->end = mem_size;
+  free_head->size = mem_size;
+  memory->free_head = freemem;
 
   /*Assumes there will always be one process to start with*/
   memory = algo_select(head.process, algoname, memory);
