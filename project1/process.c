@@ -10,6 +10,7 @@
     new->process.pr_id = pr_id;
     new->process.mem_size = mem_size;
     new->process.job_time = job_time;
+    new->process.indisk = true;
     new->next = NULL;
     if (head==NULL){
       /*New List*/
@@ -34,5 +35,17 @@ void print_disk(pronode_t *head){
     printf("%d, %d, %d, %d\n",curr->process.time_cr, curr->process.pr_id,
       curr->process.mem_size, curr->process.job_time);
       curr = curr->next;
+  }
+}
+
+void swap_process(pronode_t *head, char *algoname){
+  pronode_t *curr = head->next;
+  pronode_t *highest = head;
+  while(curr != NULL){
+    if (highest->process.time_cr < curr->process.time_cr ||
+      (highest->process.time_cr == curr->process.time_cr &&
+        highest->process.pr_id > curr->process.pr_id)){
+          highest = curr;
+    }
   }
 }

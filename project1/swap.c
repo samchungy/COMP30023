@@ -1,4 +1,3 @@
-#include "swap.h"
 #include "process.h"
 
 pronode_t * read_from_file(char *filename, int *numprocesses, pronode_t *head){
@@ -19,19 +18,26 @@ pronode_t * read_from_file(char *filename, int *numprocesses, pronode_t *head){
 }
 void start_simulation(char *algoname, int mem_size, int quantum,
    int num_p, pronode_t *head){
-  if(strcmp(algoname,FIRST) == 0){
-    /*run first algo*/
-  }
-  else if(strcmp(algoname, BEST)==0){
-    /*run best algo*/
-  }
-  else if(strcmp(algoname, WORST)==0){
-    /*run worst algo*/
-  }
-  else{
-    printf("Invalid Algo");
-    exit(EXIT_FAILURE);
-  }
+  /*Initialise Memory*/
+  list_t *memory;
+  memory = malloc(sizeof(list_t));
+  assert(memory != NULL);
+  memory.data_free = mem_size;
+  memory.pro_head = NULL;
+  node_t *freemem = mem_size;
+  freemem = malloc(sizeof(node_t));
+  assert(freemem != NULL);
+  free_head.start = STARTMEMORY;
+  free_head.end = mem_size;
+  free_head.size = mem_size;
+  memory.free_head = freemem;
+
+  /*Assumes there will always be one process to start with*/
+  memory = algo_select(head.process, algoname, memory);
+  /*while loop*/
+
+  swap_process(proclist)
+
 }
 
 int main(int argc, char *argv[]){
