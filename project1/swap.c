@@ -19,24 +19,13 @@ pronode_t * read_from_file(char *filename, int *numprocesses, pronode_t *head){
 void start_simulation(char *algoname, int mem_size, int quantum,
    int num_p, pronode_t *head){
   /*Initialise Memory*/
-  list_t *memory;
-  memory = malloc(sizeof(list_t));
-  assert(memory != NULL);
-  memory->data_free = mem_size;
-  memory->pro_head = NULL;
-  node_t *freemem = mem_size;
-  freemem = malloc(sizeof(node_t));
-  assert(freemem != NULL);
-  free_head->start = STARTMEMORY;
-  free_head->end = mem_size;
-  free_head->size = mem_size;
-  memory->free_head = freemem;
-
+  list_t *memory = init_memory(mem_size);
   /*Assumes there will always be one process to start with*/
-  memory = algo_select(head.process, algoname, memory);
+  memory = algo_select(head->process, algoname, memory);
   /*while loop*/
+  exit(EXIT_FAILURE);
 
-  swap_process(proclist)
+  /*swap_process(proclist);*/
 
 }
 
@@ -71,8 +60,8 @@ int main(int argc, char *argv[]){
 
   /*Read File Input*/
   head = read_from_file(filename, &numprocesses, head);
-  start_simulation(algoname, memsize, quantum, numprocesses, head);
   print_disk(head);
+  start_simulation(algoname, memsize, quantum, numprocesses, head);
 
   return 0;
 }
