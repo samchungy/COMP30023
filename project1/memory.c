@@ -1,8 +1,8 @@
 #include "functions.h"
 
-list_t * init_memory(int mem_size){
+mem_t * init_memory(int mem_size){
   /*New Memory Struct*/
-  list_t *new;
+  mem_t *new;
   new = malloc(sizeof(*new));
   assert(new != NULL);
 
@@ -22,10 +22,10 @@ list_t * init_memory(int mem_size){
   return new;
 }
 
-list_t * algo_select(pronode_t *proc, char *algoname, list_t *memory){
+mem_t * algo_select(pronode_t *proc, char *algoname, mem_t *memory){
   int freemem = memory->data_free;
   if(strcmp(algoname, FIRST) == 0){
-    memory = add_first(proc, memory);
+    memory = add_first(proc, memory);\
   }
   else if(strcmp(algoname, BEST)==0){
     /*run best algo*/
@@ -48,7 +48,7 @@ list_t * algo_select(pronode_t *proc, char *algoname, list_t *memory){
   return NULL;
 }
 
-list_t * add_first(pronode_t *proc, list_t *memory){
+mem_t * add_first(pronode_t *proc, mem_t *memory){
   if (memory->data_free<proc->process->mem_size){
     /*Definitely no memory slots available*/
     return memory;
@@ -77,10 +77,10 @@ list_t * add_first(pronode_t *proc, list_t *memory){
 
 }
 
-list_t * add_to_process_list(pronode_t *proc, list_t *memory){
+mem_t * add_to_process_list(pronode_t *proc, mem_t *memory){
   pronode_t *curr = memory->pro_head;
   if (curr == NULL){
-    curr = proc;
+    memory->pro_head = proc;
     return memory;
   }
   while(curr->next!=NULL){

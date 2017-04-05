@@ -15,6 +15,7 @@
     newproc->pr_id = pr_id;
     newproc->mem_size = mem_size;
     newproc->job_time = job_time;
+    newproc->run_time = 0;
     newpronode->process = newproc;
     newpronode->next=NULL;
 

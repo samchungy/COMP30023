@@ -21,26 +21,22 @@ disk_t * read_from_file(char *filename, disk_t *disk){
 void start_simulation(char *algoname, int mem_size, int quantum, disk_t *disk){
   /*Global Timer*/
   int timer = 0;
+  int quant = quantum;
   /*CPU*/
   pronode_t *CPU;
-  int isrunning = !TRUE;
+  int isrunning = 0;
   queue_t *scheduler;
   scheduler = init_queue();
   /*Initialise Memory*/
-  list_t *memory = init_memory(mem_size);
+  mem_t *memory = init_memory(mem_size);
   /*Assumes there will always be one process to start with*/
   pronode_t *temp = pop_process(&disk, timer);
   memory = algo_select(temp, algoname, memory);
   scheduler = insert_at_head(scheduler, temp);
-  while(0){
-
-    process_t *popped;
-    timer++;
-
-  }
-
-  /*swap_process(proclist);*/
-
+  CPU = temp;
+  CPU->process->run_time++;
+  printf("%d\n",CPU->process->run_time);
+  printf("%d\n",memory->process->);
 }
 
 int main(int argc, char *argv[]){

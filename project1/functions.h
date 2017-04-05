@@ -9,7 +9,6 @@
 #define BEST "best"
 #define WORST "worst"
 #define STARTMEMORY 1
-#define TRUE 1
 
 /*Process*/
 typedef struct process_t{
@@ -20,6 +19,7 @@ typedef struct process_t{
   int time_swapped;
   int startint;
   int endint;
+  int run_time;
 }process_t;
 
 /*Process Node for List*/
@@ -45,12 +45,12 @@ typedef struct node_t{
 } node_t;
 
 /*Main Memory Holder*/
-typedef struct list_t{
+typedef struct mem_t{
   node_t *free_head;
   pronode_t *pro_head;
   int numprocesses;
   int data_free;
-} list_t;
+} mem_t;
 
 typedef struct queue_t{
   pronode_t *head;
@@ -71,18 +71,23 @@ pronode_t * pop_process(disk_t **, int);
 /*Changes the pronode list and pops out the process*/
 pronode_t * pop_out_process(pronode_t **, int *num);
 
-
 /*-------MEMORY FUNCTIONS-------*/
 /*Initialises the memory struct*/
-list_t * init_memory(int);
+mem_t * init_memory(int);
 /*Selects the algo based on Specification*/
-list_t * algo_select(pronode_t *, char *, list_t *);
+mem_t * algo_select(pronode_t *, char *, mem_t *);
 /*Adds to the process list currently in memory*/
-list_t * add_to_process_list(pronode_t *, list_t *);
+mem_t * add_to_process_list(pronode_t *, mem_t *);
+
+/*------QUEUE FUNCTIONS--------*/
+/*Initialises Queue*/
+queue_t *init_queue();
+/*Insert at Head of Queue*/
+queue_t *insert_at_head(queue_t *, pronode_t *);
 
 /*Prints data out -- TEST FUNCTION*/
 void print_disk(disk_t *);
 
 /*--------ALGOS--------*/
 /*Adds based on First Algorithm*/
-list_t * add_first(pronode_t *, list_t *);
+mem_t * add_first(pronode_t *, mem_t *);
