@@ -30,7 +30,7 @@ typedef struct disk_t{
   pronode_t *swap;
   int num_ready;
   int num_swap;
-}
+}disk_t;
 
 /*Memory Node*/
 typedef struct node_t{
@@ -56,7 +56,12 @@ typedef struct list_t{
 
 /*-------DISK FUNCTIONS-------*/
 /*Reads data, creates a new process and adds it to the linked list*/
-pronode_t * create_process(int, int, int, int, disk_t *);
+pronode_t * create_process(int, int, int, int, pronode_t *);
+/*Chooses & Pops out a process based on the spec rules**/
+pronode_t * pop_process(disk_t **, int);
+/*Changes the pronode list and pops out the process*/
+pronode_t * pop_out_process(pronode_t **, int *num);
+
 
 /*-------MEMORY FUNCTIONS-------*/
 /*Initialises the memory struct*/
@@ -67,7 +72,7 @@ list_t * algo_select(pronode_t *, char *, list_t *);
 list_t * add_to_process_list(pronode_t *, list_t *);
 
 /*Prints data out -- TEST FUNCTION*/
-void print_disk(pronode_t *);
+void print_disk(disk_t *);
 
 /*--------ALGOS--------*/
 /*Adds based on First Algorithm*/

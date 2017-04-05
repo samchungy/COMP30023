@@ -4,41 +4,45 @@
     pronode_t *ready){
 
     pronode_t *newpronode;
+    newpronode = malloc(sizeof(pronode_t));
+    assert(newpronode!=NULL);
+
     process_t *newproc;
     newproc = malloc(sizeof(process_t));
     assert(newproc != NULL);
+
     newproc->time_cr = time_cr;
     newproc->pr_id = pr_id;
     newproc->mem_size = mem_size;
     newproc->job_time = job_time;
-    newdisk->ready->process = newproc;
+    newpronode->process = newproc;
+    newpronode->next=NULL;
 
-    if (disk==NULL){
+    if (ready->process==NULL){
       /*New List*/
-      return new;
+      return newpronode;
     }
     else{
       /*New Node for List*/
       pronode_t *curr;
-      curr = head;
+      curr = ready;
       while(curr->next != NULL){
         curr = curr->next;
       }
-      curr->next = new;
-      return head;
+      curr->next = newpronode;
+      return ready;
     }
 
 }
 
 disk_t * create_disk(){
-
   /**Initialise Disk**/
-  disk_t *newdisk;
+  disk_t *disk;
   pronode_t *ready;
   pronode_t *swap;
 
-  newdisk = malloc(sizeof(disk_t));
-  assert(newdisk!=NULL);
+  disk = malloc(sizeof(disk_t));
+  assert(disk!=NULL);
   ready = new_pronodelist();
   swap = new_pronodelist();
   disk->ready = ready;
@@ -57,9 +61,9 @@ pronode_t *new_pronodelist(){
   return new;
 }
 
-void print_disk(pronode_t *head){
+void print_disk(disk_t *disk){
   pronode_t *curr;
-  curr = head;
+  curr = disk->ready;
   while(curr != NULL){
     printf("%d, %d, %d, %d\n",curr->process->time_cr, curr->process->pr_id,
       curr->process->mem_size, curr->process->job_time);
@@ -67,24 +71,54 @@ void print_disk(pronode_t *head){
   }
 }
 
- pop_process(pronode_t *head, pronode_t *swap, int time, int num_p, int num_s){
-  process_t *highest;
-  process_t *temp;
-  if(!num_s){
-    if(!num_p){
-      return
-    }
-    else{
+pronode_t *pop_process(disk_t **disk, int timer){
+  process_t *ready = (*disk)->ready->process;
+  process_t *swap = (*disk)->swap->process;
+
+  if(!(*disk)->num_swap){
+    if(!(*disk)->num_ready){
+      /*No Processes in Disk or Swapped Space*/
       return NULL;
     }
+    else{
+      /*Get process from the disk*/
+      if(ready->time_cr >= timer){
+        return pop_out_process(&(*disk)->ready, &(*disk)->num_ready);
+      }
+      else{
+        /*No process created or available*/
+        return NULL;
+      }
+    }
   }
-
-
+  else{
+    if(!(*disk)->num_ready){
+      /*No Process to be created so swap in swap space process*/
+      return pop_out_process(&(*disk)->swap, &(*disk)->num_swap);
+    }
+    else{
+      /*Need to compare disk times*/
+      if(ready->time_cr >= timer){
+        if ((timer-ready->time_cr > timer-swap->time_swapped) ||
+          ((timer-ready->time_cr == timer-swap->time_swapped)
+            && (ready->pr_id <= swap->pr_id))){
+          /*Created Process has been sitting longer than swapped process
+          or they're the same and created process' p_id is higher priority*/
+          return pop_out_process(&(*disk)->ready, &(*disk)->num_ready);
+        }
+      }
+      return pop_out_process(&(*disk)->swap, &(*disk)->num_swap);
+    }
+  }
+  /*Satisfy Compiler*/
+  return NULL;
 }
 
-pronode_t *pop_out_process(pronode_t *list){
-
-
+pronode_t *pop_out_process(pronode_t **list, int *num){
+  pronode_t *temp = *list;
+  *list = temp->next;
+  *num--;
+  return temp;
 }
 /*
 void swap_process(pronode_t *head, char *algoname){

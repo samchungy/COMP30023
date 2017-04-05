@@ -16,8 +16,8 @@ CFLAGS =	-Wall -Wextra -std=gnu99
 ## SRC = Source files.
 ## EXE = Executable name.
 
-SRC =		swap.c disk.c memory.c
-OBJ =		swap.o disk.o memory.o
+SRC =		main.c disk.c memory.c
+OBJ =		main.o disk.o memory.o
 EXE = 		swap
 
 ## Top level target is executable.
@@ -36,6 +36,6 @@ clobber: clean
 
 ## Dependencies
 
-swap.o:	process.h
+main.o:	functions.h
 disk.o:	functions.h
-memory.o:	process.h
+memory.o:	functions.h
