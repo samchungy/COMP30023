@@ -19,21 +19,25 @@ disk_t * read_from_file(char *filename, disk_t *disk){
 }
 
 void start_simulation(char *algoname, int mem_size, int quantum, disk_t *disk){
+  /*Global Timer*/
   int timer = 0;
+  /*CPU*/
+  pronode_t *CPU;
+  int isrunning = !TRUE;
+  queue_t *scheduler;
+  scheduler = init_queue();
   /*Initialise Memory*/
-  printf("booya");
   list_t *memory = init_memory(mem_size);
-  printf("Fuck");
   /*Assumes there will always be one process to start with*/
-  memory = algo_select(pop_process(&disk, timer), algoname, memory);
-  printf("Made it here boss");
-  /*while loop*/
-  while(1){
+  pronode_t *temp = pop_process(&disk, timer);
+  memory = algo_select(temp, algoname, memory);
+  scheduler = insert_at_head(scheduler, temp);
+  while(0){
+
     process_t *popped;
     timer++;
 
   }
-  exit(EXIT_FAILURE);
 
   /*swap_process(proclist);*/
 

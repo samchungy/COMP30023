@@ -9,7 +9,9 @@
 #define BEST "best"
 #define WORST "worst"
 #define STARTMEMORY 1
+#define TRUE 1
 
+/*Process*/
 typedef struct process_t{
   int time_cr;
   int pr_id;
@@ -20,11 +22,13 @@ typedef struct process_t{
   int endint;
 }process_t;
 
+/*Process Node for List*/
 typedef struct pronode_t{
   process_t *process;
   struct pronode_t *next;
 } pronode_t;
 
+/*Disk Overarching Structure*/
 typedef struct disk_t{
   pronode_t *ready;
   pronode_t *swap;
@@ -47,6 +51,11 @@ typedef struct list_t{
   int numprocesses;
   int data_free;
 } list_t;
+
+typedef struct queue_t{
+  pronode_t *head;
+  pronode_t *foot;
+} queue_t;
 
 /*-------CONSTRUCTOR FUNCTIONS-------*/
  /*Creates List of Process Nodes*/

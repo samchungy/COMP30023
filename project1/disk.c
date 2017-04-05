@@ -4,11 +4,11 @@
     pronode_t *ready){
 
     pronode_t *newpronode;
-    newpronode = malloc(sizeof(pronode_t));
+    newpronode = malloc(sizeof(*newpronode));
     assert(newpronode!=NULL);
 
     process_t *newproc;
-    newproc = malloc(sizeof(process_t));
+    newproc = malloc(sizeof(*newproc));
     assert(newproc != NULL);
 
     newproc->time_cr = time_cr;
@@ -41,7 +41,7 @@ disk_t * create_disk(){
   pronode_t *ready;
   pronode_t *swap;
 
-  disk = malloc(sizeof(disk_t));
+  disk = malloc(sizeof(*disk));
   assert(disk!=NULL);
   ready = new_pronodelist();
   swap = new_pronodelist();
@@ -54,7 +54,7 @@ disk_t * create_disk(){
 
 pronode_t *new_pronodelist(){
   pronode_t *new;
-  new = malloc(sizeof(pronode_t));
+  new = malloc(sizeof(*new));
   assert(new != NULL);
   new->process = NULL;
   new->next=NULL;
@@ -117,7 +117,8 @@ pronode_t *pop_process(disk_t **disk, int timer){
 pronode_t *pop_out_process(pronode_t **list, int *num){
   pronode_t *temp = *list;
   *list = temp->next;
-  *num--;
+  (*num)--;
+  temp->next = NULL;
   return temp;
 }
 /*

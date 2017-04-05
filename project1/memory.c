@@ -3,7 +3,7 @@
 list_t * init_memory(int mem_size){
   /*New Memory Struct*/
   list_t *new;
-  new = malloc(sizeof(list_t));
+  new = malloc(sizeof(*new));
   assert(new != NULL);
 
   new->data_free = mem_size;
@@ -11,7 +11,7 @@ list_t * init_memory(int mem_size){
   new->numprocesses = 0;
   /*New Free List Struct*/
   node_t *freemem;
-  freemem = malloc(sizeof(node_t));
+  freemem = malloc(sizeof(*freemem));
   assert(freemem != NULL);
 
   freemem->start = STARTMEMORY;
