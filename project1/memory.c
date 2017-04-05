@@ -1,4 +1,4 @@
-#include "process.h"
+#include "functions.h"
 
 list_t * init_memory(int mem_size){
   /*New Memory Struct*/
@@ -8,6 +8,7 @@ list_t * init_memory(int mem_size){
 
   new->data_free = mem_size;
   new->pro_head = NULL;
+  new->numprocesses = 0;
   /*New Free List Struct*/
   node_t *freemem;
   freemem = malloc(sizeof(node_t));
@@ -16,14 +17,15 @@ list_t * init_memory(int mem_size){
   freemem->start = STARTMEMORY;
   freemem->end = mem_size;
   freemem->size = mem_size;
+  freemem->next = NULL;
   new->free_head = freemem;
   return new;
 }
 
-list_t * algo_select(process_t *proc, char *algoname, list_t *memory){
+list_t * algo_select(pronode_t *proc, char *algoname, list_t *memory){
   int freemem = memory->data_free;
   if(strcmp(algoname, FIRST) == 0){
-    /*memory = add_first(proc, memory);*/
+    memory = add_first(proc, memory);
   }
   else if(strcmp(algoname, BEST)==0){
     /*run best algo*/
@@ -46,51 +48,44 @@ list_t * algo_select(process_t *proc, char *algoname, list_t *memory){
   return NULL;
 }
 
-list_t * add_first(process_t *proc, list_t *memory){
-  if (memory->data_free<proc->mem_size){
+list_t * add_first(pronode_t *proc, list_t *memory){
+  if (memory->data_free<proc->process->mem_size){
     /*Definitely no memory slots available*/
     return memory;
   }
 
-node_t *curr = memory->free_head;
-pronode_t *procurr = memory->pro_head;
-
-/*Iterate over Free Lists*/
-while(curr != NULL){
-  if (proc->mem_size < curr->size){
-    /*Found memory space! Add to running processes list*/
-    while(procurr->next!= NULL){
-      procurr = procurr->next;
+  node_t *curr = memory->free_head;
+  /*Iterate over Free Lists*/
+  while(curr != NULL){
+    if (proc->process->mem_size < curr->size){
+      /*Found memory space! - Modify Free Space, Add Space Spec to Process*/
+      proc->process->startint = curr->start;
+      proc->process->endint = proc->process->startint + ((proc->process->mem_size)-1);
+      curr->start = proc->process->endint;
+      curr->end = curr->start + (curr->size-((proc->process->mem_size)-1));
+      memory->data_free -= proc->process->mem_size;
+      memory->numprocesses++;
+      return add_to_process_list(proc, memory);
     }
-    /*Add Process Start/End Address, Modify Free Space Item*/
-    proc->startint = curr->start;
-    proc->endint = proc->startint + ((proc->mem_size)-1);
-    curr->start = proc->endint;
-    curr->end = curr->start + (curr->size-((proc->mem_size)-1));
-    memory->data_free -= proc->mem_size;
-    return add_to_process_list(proc, memory);
+    else{
+      /*Memory space is too small*/
+      curr = curr->next;
+    }
   }
-  else{
-    /*Memory space is too small*/
-    curr = curr->next;
-  }
-}
-/*Fail State - No Memory Spots*/
-return memory;
+  /*Fail State - No Memory Spots*/
+  return memory;
 
 }
 
-list_t * add_to_process_list(process_t *proc, list_t *memory){
-  pronode_t *new;
-  new = malloc(sizeof(pronode_t));
-  assert(new != NULL);
-  new->process = proc;
-  new->next = NULL;
-
+list_t * add_to_process_list(pronode_t *proc, list_t *memory){
   pronode_t *curr = memory->pro_head;
+  if (curr == NULL){
+    curr = proc;
+    return memory;
+  }
   while(curr->next!=NULL){
     curr=curr->next;
   }
-  curr->next = new;
+  curr->next = proc;
   return memory;
 }

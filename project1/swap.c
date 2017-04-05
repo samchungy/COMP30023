@@ -1,6 +1,6 @@
-#include "process.h"
+#include "functions.h"
 
-pronode_t * read_from_file(char *filename, int *numprocesses, pronode_t *head){
+disk_t * read_from_file(char *filename, int *numprocesses, disk_t *disk){
     int time_cr;
     int pr_id;
     int mem_size;
@@ -11,18 +11,27 @@ pronode_t * read_from_file(char *filename, int *numprocesses, pronode_t *head){
       fscanf(file,"%d",&mem_size);
       fscanf(file,"%d",&job_time);
       *numprocesses++;
-      head = read_to_disk(time_cr, pr_id, mem_size, job_time, head);
+      disk->ready = create_process(time_cr, pr_id, mem_size, job_time,
+        disk->ready);
     }
     fclose(file);
-    return head;
+    return disk;
 }
 void start_simulation(char *algoname, int mem_size, int quantum,
    int num_p, pronode_t *head){
+  int time = 0;
+  int numswapped = 0;
   /*Initialise Memory*/
   list_t *memory = init_memory(mem_size);
+  pronode_t *swapped = new_pronodelist();
   /*Assumes there will always be one process to start with*/
-  memory = algo_select(head->process, algoname, memory);
+  memory = algo_select(head, algoname, memory);
   /*while loop*/
+  while(1){
+    process_t *popped;
+    time++;
+
+  }
   exit(EXIT_FAILURE);
 
   /*swap_process(proclist);*/
@@ -32,7 +41,7 @@ void start_simulation(char *algoname, int mem_size, int quantum,
 int main(int argc, char *argv[]){
   /*Input File Variables*/
   int numprocesses = 0;
-  pronode_t *head = NULL;
+  disk_t *disk = NULL;
 
   /*Command Line Flag Variables*/
   int option;
@@ -59,7 +68,7 @@ int main(int argc, char *argv[]){
   /*printf("%s, %s, %d, %d", filename, algoname, memsize, quantum);*/
 
   /*Read File Input*/
-  head = read_from_file(filename, &numprocesses, head);
+  disk = read_from_file(filename, &numprocesses, head);
   print_disk(head);
   start_simulation(algoname, memsize, quantum, numprocesses, head);
 
