@@ -55,6 +55,7 @@ typedef struct mem_t{
 typedef struct queue_t{
   pronode_t *head;
   pronode_t *foot;
+  int numitems;
 } queue_t;
 
 /*-------CONSTRUCTOR FUNCTIONS-------*/
@@ -78,6 +79,10 @@ mem_t * init_memory(int);
 mem_t * algo_select(pronode_t *, char *, mem_t *);
 /*Adds to the process list currently in memory*/
 mem_t * add_to_process_list(pronode_t *, mem_t *);
+/*Takes away free Space & assigns process memory ints*/
+void assign_to_memory(process_t **, node_t **, node_t **, mem_t **);
+/*Removeds Process from Memory*/
+process_t * remove_from_mem(process_t *, )
 
 /*------QUEUE FUNCTIONS--------*/
 /*Initialises Queue*/
@@ -91,3 +96,7 @@ void print_disk(disk_t *);
 /*--------ALGOS--------*/
 /*Adds based on First Algorithm*/
 mem_t * add_first(pronode_t *, mem_t *);
+/*Adds based on Best Algorithm*/
+mem_t * add_best(pronode_t *, mem_t *);
+/*Adds based on Worst Algorithm*/
+mem_t * add_worst(pronode_t *, mem_t *);

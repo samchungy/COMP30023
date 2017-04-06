@@ -34,9 +34,18 @@ void start_simulation(char *algoname, int mem_size, int quantum, disk_t *disk){
   memory = algo_select(temp, algoname, memory);
   scheduler = insert_at_head(scheduler, temp);
   CPU = temp;
-  CPU->process->run_time++;
-  printf("%d\n",CPU->process->run_time);
-  printf("%d\n",memory->process->);
+
+  while(1){
+    if (quant > 0){
+      /*Quantum has not expired*/
+      CPU->process->run_time++;
+      quant--;
+    }
+    else{
+      /*Quantum Expired*/
+
+    }
+  }
 }
 
 int main(int argc, char *argv[]){
