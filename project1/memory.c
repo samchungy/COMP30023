@@ -25,7 +25,7 @@ mem_t * init_memory(int mem_size){
   return new;
 }
 
-pronode_t * pop_out_longest_in_mem(mem_t **mem, int timer){
+pronode_t * pop_out_longest_in_mem(mem_t **mem){
   pronode_t *curr = (*mem)->pro_head;
   pronode_t *prev = NULL;
   pronode_t *longest = NULL;
@@ -57,7 +57,7 @@ pronode_t * pop_out_longest_in_mem(mem_t **mem, int timer){
 mem_t * insert_into_mem(pronode_t *proc, char *algoname, mem_t *memory,
   int timer, queue_t **queue, disk_t **disk){
   int triedtoinsert = 0;
-  while(proc->time_memoryin == NOTINMEM){
+  while(proc->process->time_memoryin == NOTINMEM){
     int freemem = memory->data_free;
     if (!triedtoinsert){
       if(strcmp(algoname, FIRST) == 0){
@@ -83,20 +83,12 @@ mem_t * insert_into_mem(pronode_t *proc, char *algoname, mem_t *memory,
     }
     else{
       /*Make Space*/
-      pronode_t *pronod = pop_out_longest_in_mem(&mem, timer);
+      pronode_t *pronod = pop_out_longest_in_mem(&memory);
       pop_from_queue_select(&(*queue),pronod);
       add_to_swapspace(&(*disk),pronod);
     }
   }
-  if (freemem<proc->process->mem_size){
-    /*Definitely no memory slots available*/
-    return memory;
-  }
 
-  else{
-    printf("Invalid Algo");
-    exit(EXIT_FAILURE);
-  }
   return memory;
 }
 
@@ -107,7 +99,7 @@ mem_t * add_first(pronode_t *proc, mem_t *memory, int timer){
   while(curr != NULL){
     if (proc->process->mem_size <= curr->size){
       /*Found memory space! - Modify Free Space, Add Space Spec to Process*/
-      assign_to_memory(&(proc->process),&curr, &prev, &memory, int timer);
+      assign_to_memory(&(proc->process),&curr, &prev, &memory, timer);
       return add_to_process_list(proc, memory);
     }
     else{
@@ -153,7 +145,7 @@ mem_t * add_best(pronode_t *proc, mem_t *memory, int timer){
   }
   else{
     /*Found one which fits*/
-    assign_to_memory(&(proc->process),&best, &bestprev, &memory, int timer);
+    assign_to_memory(&(proc->process),&best, &bestprev, &memory, timer);
     return add_to_process_list(proc, memory);
   }
 }
@@ -191,7 +183,7 @@ mem_t *add_worst(pronode_t *proc, mem_t *memory, int timer){
   }
   else{
     /*Found one which fits*/
-    assign_to_memory(&(proc->process),&largest, &largestprev,&memory,int timer);
+    assign_to_memory(&(proc->process),&largest, &largestprev,&memory,timer);
     return add_to_process_list(proc, memory);
   }
 }
@@ -230,10 +222,10 @@ void free_node(node_t *node){
   free(node);
 }
 
-pronode_t * pop_from_mem(mem_t **mem, process_t *proc){
+pronode_t * pop_from_mem(mem_t **mem, pronode_t *proc){
   pronode_t *curr = (*mem)->pro_head;
   pronode_t *prev = (*mem)->pro_head;
-  while(curr->process->pr_id != proc->pr_id){
+  while(curr->process->pr_id != proc->process->pr_id){
     prev = curr;
     curr = curr->next;
   }
@@ -246,6 +238,7 @@ pronode_t * pop_from_mem(mem_t **mem, process_t *proc){
 
 mem_t *restore_free_space(mem_t *mem, int start, int end, int size){
   node_t *curr = mem->free_head;
+  mem->numprocesses--;
   if (curr != NULL){
     while(curr!=NULL){
         if (end < curr->start){

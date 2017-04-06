@@ -20,6 +20,7 @@ queue_t *insert_at_head(queue_t *queue, pronode_t *item) {
   else{
     /*Queue is empty*/
     queue->head = item;
+    queue->foot = item;
   }
   return queue;
 }
@@ -33,6 +34,7 @@ queue_t *insert_at_foot(queue_t *queue, pronode_t *item){
   }
   else{
     /*Queue Footer is Empty*/
+    queue->head = item;
     queue->foot = item;
   }
   return queue;
@@ -43,21 +45,22 @@ pronode_t *pop_from_queue(queue_t **queue){
   pronode_t *proc = (*queue)->head;
   proc->next = NULL;
   (*queue)->head = (*queue)->head->next;
-  numitems--;
-  if(numitems == 1){
-    (*queue)->tail = (*queue)->head->next;
+  (*queue)->numitems--;
+  if((*queue)->numitems == 1){
+    (*queue)->head->next=NULL;
+    (*queue)->foot = (*queue)->head;
   }
   return proc;
 }
 
 pronode_t *pop_from_queue_select(queue_t **queue, pronode_t *pro){
-  assert(queue->head != NULL);
-  if(curr->process->pr_id == pro->process->pr_id){
+  assert((*queue)->head != NULL);
+  if((*queue)->head->process->pr_id == pro->process->pr_id){
     pronode_t *processa = (*queue)->head;
     processa->next = NULL;
     (*queue)->head = NULL;
-    (*queue)->tail = NULL;
-    (*queue)->numItems--;
+    (*queue)->foot = NULL;
+    (*queue)->numitems--;
     return processa;
   }
 
@@ -66,9 +69,13 @@ pronode_t *pop_from_queue_select(queue_t **queue, pronode_t *pro){
 
   while(curr!=NULL){
     if(curr->process->pr_id == pro->process->pr_id){
-      prev->process->next = curr->process->next;
+      prev->next = curr->next;
       curr->next = NULL;
-      (*queue)->numitems--
+      (*queue)->numitems--;
+      if((*queue)->numitems == 1){
+        (*queue)->head->next=NULL;
+        (*queue)->foot = (*queue)->head;
+      }
       return curr;
     }
   }

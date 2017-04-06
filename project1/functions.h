@@ -75,6 +75,8 @@ pronode_t * pop_process(disk_t **, int);
 pronode_t * pop_out_process(pronode_t **, int *num);
 /*Adds process to swap space*/
 void add_to_swapspace(disk_t **, pronode_t *);
+/*Frees Pronode**/
+void free_pronode(pronode_t *);
 
 /*-------MEMORY FUNCTIONS-------*/
 /*Initialises the memory struct*/
@@ -86,9 +88,9 @@ mem_t * add_to_process_list(pronode_t *, mem_t *);
 /*Takes away free Space & assigns process memory ints*/
 void assign_to_memory(process_t **, node_t **, node_t **, mem_t **, int);
 /*Removeds Process from Memory*/
-pronode_t * pop_from_mem(mem_t **, process_t *);
+pronode_t * pop_from_mem(mem_t **, pronode_t *);
 /*Pop out process which has been in memory the longest*/
-pronode_t * pop_out_longest_in_mem(mem_t **, int);
+pronode_t * pop_out_longest_in_mem(mem_t **);
 /*Creates a new memory node*/
 node_t *new_mem_node(int, int, int, node_t *);
 /*in-order insert of free space into free list, merges blocks together*/
@@ -113,6 +115,8 @@ queue_t *insert_at_head(queue_t *, pronode_t *);
 pronode_t *pop_from_queue_select(queue_t **, pronode_t *);
 /*Pop Head of Queue*/
 pronode_t *pop_from_queue(queue_t **);
+/*Insert at Foot of Queue*/
+queue_t *insert_at_foot(queue_t *, pronode_t *);
 
 /*Prints data out -- TEST FUNCTION*/
 void print_disk(disk_t *);

@@ -133,10 +133,13 @@ void free_pronode(pronode_t *pro){
 void add_to_swapspace(disk_t **disk, pronode_t *pronode){
   if((*disk)->swap == NULL){
     (*disk)->swap = pronode;
+    num_ready++;
+    return;
   }
   pronode_t *curr = (*disk)->swap;
   while(curr->next != NULL){
     curr = curr->next;
   }
   curr->next = pronode;
+  num_ready++;
 }
