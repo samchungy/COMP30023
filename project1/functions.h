@@ -73,6 +73,8 @@ pronode_t * create_process(int, int, int, int, pronode_t *);
 pronode_t * pop_process(disk_t **, int);
 /*Changes the pronode list and pops out the process*/
 pronode_t * pop_out_process(pronode_t **, int *num);
+/*Adds process to swap space*/
+void add_to_swapspace(disk_t **, pronode_t *);
 
 /*-------MEMORY FUNCTIONS-------*/
 /*Initialises the memory struct*/

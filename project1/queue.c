@@ -41,10 +41,11 @@ queue_t *insert_at_foot(queue_t *queue, pronode_t *item){
 pronode_t *pop_from_queue(queue_t **queue){
   assert((*queue)->head != NULL);
   pronode_t *proc = (*queue)->head;
+  proc->next = NULL;
   (*queue)->head = (*queue)->head->next;
   numitems--;
   if(numitems == 1){
-    (*queue)->next = (*queue)->head->next;
+    (*queue)->tail = (*queue)->head->next;
   }
   return proc;
 }
@@ -53,6 +54,7 @@ pronode_t *pop_from_queue_select(queue_t **queue, pronode_t *pro){
   assert(queue->head != NULL);
   if(curr->process->pr_id == pro->process->pr_id){
     pronode_t *processa = (*queue)->head;
+    processa->next = NULL;
     (*queue)->head = NULL;
     (*queue)->tail = NULL;
     (*queue)->numItems--;
@@ -65,6 +67,7 @@ pronode_t *pop_from_queue_select(queue_t **queue, pronode_t *pro){
   while(curr!=NULL){
     if(curr->process->pr_id == pro->process->pr_id){
       prev->process->next = curr->process->next;
+      curr->next = NULL;
       (*queue)->numitems--
       return curr;
     }

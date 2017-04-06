@@ -47,6 +47,7 @@ pronode_t * pop_out_longest_in_mem(mem_t **mem, int timer){
     curr = curr->next;
   }
   longestprev->next = longest->next;
+  longest->next = NULL;
   (*mem) = restore_free_space(*mem, longest->process->startint,
     longest->process->endint, longest->process->mem_size);
   return longest;
@@ -84,7 +85,7 @@ mem_t * insert_into_mem(pronode_t *proc, char *algoname, mem_t *memory,
       /*Make Space*/
       pronode_t *pronod = pop_out_longest_in_mem(&mem, timer);
       pop_from_queue_select(&(*queue),pronod);
-
+      add_to_swapspace(&(*disk),pronod);
     }
   }
   if (freemem<proc->process->mem_size){
@@ -237,6 +238,7 @@ pronode_t * pop_from_mem(mem_t **mem, process_t *proc){
     curr = curr->next;
   }
   prev->next = curr->next;
+  curr->next = NULL;
   (*mem) = restore_free_space(*mem, curr->process->startint,
     curr->process->endint, curr->process->mem_size);
   return curr;
