@@ -93,6 +93,9 @@ mem_t * insert_into_mem(process_t *process, char *algoname, mem_t *memory,
     else{
       /*Make Space*/
       process_t *procc = pop_out_longest_in_mem(&memory);
+      printf("Popped the oldest out\n");
+      printf("%d\n",procc->pr_id);
+      fflush(stdout);
       pop_from_queue_select(&(*queue),procc);
       add_to_swapspace(&(*disk),procc, timer);
       triedtoinsert = 0;
@@ -114,6 +117,7 @@ mem_t * add_first(pronode_t *proc, mem_t *memory, int timer){
     }
     else{
       /*Memory space is too small*/
+      printf("Proc: %d, Block(%d/%d) Space: %d\n",proc->process->mem_size, curr->start, curr->end, curr->size);
       prev = curr;
       curr = curr->next;
     }
@@ -234,13 +238,20 @@ void free_node(node_t *node){
 
 pronode_t * pop_from_mem(mem_t **mem, process_t *proc){
   pronode_t *curr = (*mem)->pro_head;
-  pronode_t *prev = (*mem)->pro_head;
+  pronode_t *prev = NULL;
+
   while(curr->process->pr_id != proc->pr_id){
     prev = curr;
     curr = curr->next;
   }
-  prev->next = curr->next;
-  curr->next = NULL;
+  if(prev != NULL){
+    prev->next = curr->next;
+    curr->next = NULL;
+  }
+  else{
+    (*mem)->pro_head = (*mem)->pro_head->next;
+  }
+
   (*mem) = restore_free_space(*mem, curr->process->startint,
     curr->process->endint, curr->process->mem_size);
   return curr;
@@ -249,6 +260,7 @@ pronode_t * pop_from_mem(mem_t **mem, process_t *proc){
 mem_t *restore_free_space(mem_t *mem, int start, int end, int size){
   node_t *curr = mem->free_head;
   mem->numprocesses--;
+  mem->data_free+=size;
   if (curr != NULL){
     while(curr!=NULL){
         if (end < curr->start){

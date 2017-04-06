@@ -88,12 +88,13 @@ process_t *pop_process(disk_t **disk, int timer){
 
   if((*disk)->num_swap){
     /*If there are processes in the swap space*/
-    if((*disk)->num_ready){
+    if((*disk)->num_ready && timer-ready->process->time_cr >= 0){
       /*If there are processes in both ready space and swap space*/
       /*COMPARE*/
       if(timer-ready->process->time_cr > timer-swap->process->time_swapped){
         /*If the ready process has been on disk longer than the swapped process*/
         return pop_out_process(&(*disk)->ready, &(*disk)->num_ready);
+      }
       else if(timer-ready->process->time_cr ==
         timer-swap->process->time_swapped){
           /*If they are the same age - compare pids*/
@@ -101,57 +102,28 @@ process_t *pop_process(disk_t **disk, int timer){
             return pop_out_process(&(*disk)->ready, &(*disk)->num_ready);
           }
           else{
-            return pop_out_process(&(*disk)->swap, &(*disk)->num_swap)
+            return pop_out_process(&(*disk)->swap, &(*disk)->num_swap);
           }
       }
       else{
-
-      }
-
+        /*Swapped Process is older*/
+        return pop_out_process(&(*disk)->swap, &(*disk)->num_swap);
       }
     }
     else{
-      /*No processes in ready state so use the swap space.*/
-
-    }
-  }
-  if(!(*disk)->num_swap){
-    if(!(*disk)->num_ready){
-      /*No Processes in Disk or Swapped Space*/
-      return NULL;
-    }
-    else{
-      /*Get process from the disk*/
-      if(ready->time_cr >= timer){
-        return pop_out_process(&(*disk)->ready, &(*disk)->num_ready);
-      }
-      else{
-        /*No process created or available*/
-        return NULL;
-      }
+      /*There are only Swap Space Processes*/
+      return pop_out_process(&(*disk)->swap, &(*disk)->num_swap);
     }
   }
   else{
-    if(!(*disk)->num_ready){
-      /*No Process to be created so swap in swap space process*/
-      return pop_out_process(&(*disk)->swap, &(*disk)->num_swap);
+    if((*disk)->num_ready && timer-ready->process->time_cr >= 0){
+      return pop_out_process(&(*disk)->ready, &(*disk)->num_ready);
     }
     else{
-      /*Need to compare disk times*/
-      if(ready->time_cr >= timer){
-        if ((timer-ready->time_cr > timer-swap->time_swapped) ||
-          ((timer-ready->time_cr == timer-swap->time_swapped)
-            && (ready->pr_id <= swap->pr_id))){
-          /*Created Process has been sitting longer than swapped process
-          or they're the same and created process' p_id is higher priority*/
-          return pop_out_process(&(*disk)->ready, &(*disk)->num_ready);
-        }
-      }
-      return pop_out_process(&(*disk)->swap, &(*disk)->num_swap);
+      /*Nothing available to return right now*/
+      return NULL;
     }
   }
-  /*Satisfy Compiler*/
-  return NULL;
 }
 
 process_t *pop_out_process(pronode_t **list, int *num){
