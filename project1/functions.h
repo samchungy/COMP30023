@@ -59,12 +59,12 @@ typedef struct queue_t{
 } queue_t;
 
 /*-------CONSTRUCTOR FUNCTIONS-------*/
- /*Creates List of Process Nodes*/
- pronode_t *new_pronodelist();
  /*Creates Disk*/
  disk_t *create_disk();
 
 /*-------DISK FUNCTIONS-------*/
+/*Creates List of Process Nodes*/
+pronode_t *new_pronodelist();
 /*Reads data, creates a new process and adds it to the linked list*/
 pronode_t * create_process(int, int, int, int, pronode_t *);
 /*Chooses & Pops out a process based on the spec rules**/
@@ -82,7 +82,11 @@ mem_t * add_to_process_list(pronode_t *, mem_t *);
 /*Takes away free Space & assigns process memory ints*/
 void assign_to_memory(process_t **, node_t **, node_t **, mem_t **);
 /*Removeds Process from Memory*/
-process_t * remove_from_mem(process_t *, )
+process_t * pop_from_mem(mem_t **, process_t *);
+/*Creates a new memory node*/
+node_t *new_mem_node(node_t *, int, int, int, node_t *);
+/*Restores free space from process*/
+mem_t *restore_free_space(mem_t *, int, int, int);
 
 /*------QUEUE FUNCTIONS--------*/
 /*Initialises Queue*/

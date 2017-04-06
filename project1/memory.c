@@ -1,5 +1,16 @@
 #include "functions.h"
 
+node_t *new_mem_node(node_t *node, int mem, int start, int end, node_t *next){
+  node_t *new;
+  new = malloc(sizeof(*new));
+  assert(new!=NULL);
+  new->start = start;
+  new->mem_size = mem;
+  new->end = end;
+  new->next=next;
+  return new;
+}
+
 mem_t * init_memory(int mem_size){
   /*New Memory Struct*/
   mem_t *new;
@@ -11,13 +22,7 @@ mem_t * init_memory(int mem_size){
   new->numprocesses = 0;
   /*New Free List Struct*/
   node_t *freemem;
-  freemem = malloc(sizeof(*freemem));
-  assert(freemem != NULL);
-
-  freemem->start = STARTMEMORY;
-  freemem->end = mem_size;
-  freemem->size = mem_size;
-  freemem->next = NULL;
+  new_mem_node(freemem, mem_size, STARTMEMORY, mem_size, NULL);
   new->free_head = freemem;
   return new;
 }
@@ -157,11 +162,6 @@ void assign_to_memory(process_t **proc, node_t **node, node_t **prev,
   }
 }
 
-void free_node(node_t *node){
-  assert(node != NULL);
-  free(node);
-}
-
 mem_t * add_to_process_list(pronode_t *proc, mem_t *memory){
   pronode_t *curr = memory->pro_head;
   if (curr == NULL){
@@ -173,4 +173,58 @@ mem_t * add_to_process_list(pronode_t *proc, mem_t *memory){
   }
   curr->next = proc;
   return memory;
+}
+
+
+void free_node(node_t *node){
+  assert(node != NULL);
+  free(node);
+}
+
+process_t * pop_from_mem(mem_t **mem, process_t *proc){
+  pronode_t *curr = (*mem)->pro_head;
+  pronode_t *prev = (*mem)->pro_head;
+  while(curr->process->pr_id != proc->process->pr_id){
+    prev = curr;
+    curr = curr->next;
+  }
+  prev->next = curr->next;
+  (*mem) = restore_free_space(*mem, curr->process->startint,
+    curr->process->endint);
+}
+
+mem_t *restore_free_space(mem_t *mem, int start, int end, int size){
+  node_t *prev = mem->free_head;
+  node_t *curr = mem->free_head;
+  int sizetot;
+  if (curr != NULL){
+    while(curr!=NULL){
+        if (curr->end == start-1){
+          /*Free node which connects with freed space is found.*/
+          if (curr->next == NULL){
+            /*There is no other free space connected, combine spaces*/
+            curr->end = end;
+            curr->size+=size;
+            return mem;
+          }
+          else if (curr->next->start==end+1){
+            curr->size+=(curr->next->size+size);
+            curr->end = curr->next->end;
+            free_node(curr->next);
+            
+          }
+          else{
+
+          }
+
+
+          }
+        }
+    }
+  }
+  else{
+    /*Free List is Empty - Create a new node*/
+    mem->free_head = new_mem_node(mem->free_head, size, start, end, NULL);
+    return mem;
+  }
 }

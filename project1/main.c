@@ -18,6 +18,8 @@ disk_t * read_from_file(char *filename, disk_t *disk){
     return disk;
 }
 
+void
+
 void start_simulation(char *algoname, int mem_size, int quantum, disk_t *disk){
   /*Global Timer*/
   int timer = 0;
@@ -39,6 +41,9 @@ void start_simulation(char *algoname, int mem_size, int quantum, disk_t *disk){
     if (quant > 0){
       /*Quantum has not expired*/
       CPU->process->run_time++;
+      if(CPU->process->run_time == CPU->process->job_time){
+        /*Swap*/
+      }
       quant--;
     }
     else{
