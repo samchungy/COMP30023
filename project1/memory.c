@@ -1,11 +1,11 @@
 #include "functions.h"
 
-node_t *new_mem_node(node_t *node, int mem, int start, int end, node_t *next){
+node_t *new_mem_node(int mem, int start, int end, node_t *next){
   node_t *new;
   new = malloc(sizeof(*new));
   assert(new!=NULL);
   new->start = start;
-  new->mem_size = mem;
+  new->size = mem;
   new->end = end;
   new->next=next;
   return new;
@@ -21,9 +21,7 @@ mem_t * init_memory(int mem_size){
   new->pro_head = NULL;
   new->numprocesses = 0;
   /*New Free List Struct*/
-  node_t *freemem;
-  new_mem_node(freemem, mem_size, STARTMEMORY, mem_size, NULL);
-  new->free_head = freemem;
+  new->free_head = new_mem_node(mem_size, STARTMEMORY, mem_size, NULL);
   return new;
 }
 
@@ -154,8 +152,8 @@ void assign_to_memory(process_t **proc, node_t **node, node_t **prev,
   (*proc)->endint = ((*node)->end);
   (*node)->end = (*proc)->startint-1;
   (*node)->size -= (*proc)->mem_size;
-  (*memory)->data_free -= (*proc)->mem_size;
-  (*memory)->numprocesses++;
+  (*mem)->data_free -= (*proc)->mem_size;
+  (*mem)->numprocesses++;
   if ((*node)->size == 0){
     (*prev)->next = (*node)->next;
     free_node((*node));
@@ -181,50 +179,83 @@ void free_node(node_t *node){
   free(node);
 }
 
-process_t * pop_from_mem(mem_t **mem, process_t *proc){
+pronode_t * pop_from_mem(mem_t **mem, process_t *proc){
   pronode_t *curr = (*mem)->pro_head;
   pronode_t *prev = (*mem)->pro_head;
-  while(curr->process->pr_id != proc->process->pr_id){
+  while(curr->process->pr_id != proc->pr_id){
     prev = curr;
     curr = curr->next;
   }
   prev->next = curr->next;
   (*mem) = restore_free_space(*mem, curr->process->startint,
-    curr->process->endint);
+    curr->process->endint, curr->process->mem_size);
+  return curr;
 }
 
 mem_t *restore_free_space(mem_t *mem, int start, int end, int size){
-  node_t *prev = mem->free_head;
+  node_t *prev = NULL;
   node_t *curr = mem->free_head;
-  int sizetot;
   if (curr != NULL){
     while(curr!=NULL){
-        if (curr->end == start-1){
-          /*Free node which connects with freed space is found.*/
-          if (curr->next == NULL){
-            /*There is no other free space connected, combine spaces*/
-            curr->end = end;
+        if (end < curr->start){
+          /*Free Space has a smaller address than first node*/
+          if (end+1 == curr->start){
+            /**Next Space is adjacent. Add free space to that node.*/
+            curr->start = start;
             curr->size+=size;
             return mem;
           }
-          else if (curr->next->start==end+1){
-            curr->size+=(curr->next->size+size);
-            curr->end = curr->next->end;
-            free_node(curr->next);
-            
-          }
           else{
-
-          }
-
-
+            /**Create a new node, the next data node does not connect*/
+            mem->free_head = new_mem_node(size, start, end, curr);
+            return mem;
           }
         }
+        else{
+          /*Free Space Node has a lower value than freed space*/
+          if (curr->end == start-1){
+            /*Free Space connects with Free Space Node*/
+            if (curr->next == NULL || !(curr->next->start==end+1) ){
+              /*There is no other free space connected or the next space
+              does not connect up, combine spaces*/
+              curr->end = end;
+              curr->size+=size;
+              return mem;
+            }
+            else{
+              /*Next available space connects with this one Merge all 3*/
+              curr->size+=(curr->next->size+size);
+              curr->end = curr->next->end;
+              node_t *temp = curr->next->next;
+              free_node(curr->next);
+              curr->next = temp;
+              return mem;
+            }
+          }
+          else{
+            /*Not Connected to current Node*/
+            if (curr->next == NULL){
+              /*No data available so create a new node*/
+              curr->next = new_mem_node(size, start, end, NULL);
+              return mem;
+            }
+            else if (!(curr->next->start <= end+1)){
+              /*Another Node Available, it's larger than free space address*/
+              curr->next = new_mem_node(size, start, end, curr->next);
+              return mem;
+            }
+            else{
+              /*Next node is smaller. Let the while loop deal with this*/
+            }
+          }
+        }
+        curr = curr->next;
     }
+    return mem;
   }
   else{
     /*Free List is Empty - Create a new node*/
-    mem->free_head = new_mem_node(mem->free_head, size, start, end, NULL);
+    mem->free_head = new_mem_node(size, start, end, NULL);
     return mem;
   }
 }

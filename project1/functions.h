@@ -82,11 +82,13 @@ mem_t * add_to_process_list(pronode_t *, mem_t *);
 /*Takes away free Space & assigns process memory ints*/
 void assign_to_memory(process_t **, node_t **, node_t **, mem_t **);
 /*Removeds Process from Memory*/
-process_t * pop_from_mem(mem_t **, process_t *);
+pronode_t * pop_from_mem(mem_t **, process_t *);
 /*Creates a new memory node*/
-node_t *new_mem_node(node_t *, int, int, int, node_t *);
-/*Restores free space from process*/
+node_t *new_mem_node(int, int, int, node_t *);
+/*in-order insert of free space into free list, merges blocks together*/
 mem_t *restore_free_space(mem_t *, int, int, int);
+/*free node*/
+void free_node(node_t *);
 
 /*------QUEUE FUNCTIONS--------*/
 /*Initialises Queue*/
