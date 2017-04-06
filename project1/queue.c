@@ -37,3 +37,37 @@ queue_t *insert_at_foot(queue_t *queue, pronode_t *item){
   }
   return queue;
 }
+
+pronode_t *pop_from_queue(queue_t **queue){
+  assert((*queue)->head != NULL);
+  pronode_t *proc = (*queue)->head;
+  (*queue)->head = (*queue)->head->next;
+  numitems--;
+  if(numitems == 1){
+    (*queue)->next = (*queue)->head->next;
+  }
+  return proc;
+}
+
+pronode_t *pop_from_queue_select(queue_t **queue, pronode_t *pro){
+  assert(queue->head != NULL);
+  if(curr->process->pr_id == pro->process->pr_id){
+    pronode_t *processa = (*queue)->head;
+    (*queue)->head = NULL;
+    (*queue)->tail = NULL;
+    (*queue)->numItems--;
+    return processa;
+  }
+
+  pronode_t *curr = (*queue)->head->next;
+  pronode_t *prev = (*queue)->head;
+
+  while(curr!=NULL){
+    if(curr->process->pr_id == pro->process->pr_id){
+      prev->process->next = curr->process->next;
+      (*queue)->numitems--
+      return curr;
+    }
+  }
+  return curr;
+}

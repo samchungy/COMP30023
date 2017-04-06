@@ -9,6 +9,7 @@
 #define BEST "best"
 #define WORST "worst"
 #define STARTMEMORY 1
+#define NOTINMEM -1
 
 /*Process*/
 typedef struct process_t{
@@ -17,6 +18,7 @@ typedef struct process_t{
   int mem_size;
   int job_time;
   int time_swapped;
+  int time_memoryin;
   int startint;
   int endint;
   int run_time;
@@ -75,34 +77,40 @@ pronode_t * pop_out_process(pronode_t **, int *num);
 /*-------MEMORY FUNCTIONS-------*/
 /*Initialises the memory struct*/
 mem_t * init_memory(int);
-/*Selects the algo based on Specification*/
-mem_t * algo_select(pronode_t *, char *, mem_t *);
+/*Inserts Process Into Memory*/
+mem_t * insert_into_mem(pronode_t *, char *, mem_t *, int, queue_t **, disk_t **);
 /*Adds to the process list currently in memory*/
 mem_t * add_to_process_list(pronode_t *, mem_t *);
 /*Takes away free Space & assigns process memory ints*/
-void assign_to_memory(process_t **, node_t **, node_t **, mem_t **);
+void assign_to_memory(process_t **, node_t **, node_t **, mem_t **, int);
 /*Removeds Process from Memory*/
 pronode_t * pop_from_mem(mem_t **, process_t *);
+/*Pop out process which has been in memory the longest*/
+pronode_t * pop_out_longest_in_mem(mem_t **, int);
 /*Creates a new memory node*/
 node_t *new_mem_node(int, int, int, node_t *);
 /*in-order insert of free space into free list, merges blocks together*/
 mem_t *restore_free_space(mem_t *, int, int, int);
 /*free node*/
 void free_node(node_t *);
+/*--------ALGOS--------*/
+/*Adds based on First Algorithm*/
+mem_t * add_first(pronode_t *, mem_t *, int);
+/*Adds based on Best Algorithm*/
+mem_t * add_best(pronode_t *, mem_t *, int);
+/*Adds based on Worst Algorithm*/
+mem_t * add_worst(pronode_t *, mem_t *, int);
+
 
 /*------QUEUE FUNCTIONS--------*/
 /*Initialises Queue*/
 queue_t *init_queue();
 /*Insert at Head of Queue*/
 queue_t *insert_at_head(queue_t *, pronode_t *);
+/*Pop from queue (Selective)*/
+pronode_t *pop_from_queue_select(queue_t **, pronode_t *);
+/*Pop Head of Queue*/
+pronode_t *pop_from_queue(queue_t **);
 
 /*Prints data out -- TEST FUNCTION*/
 void print_disk(disk_t *);
-
-/*--------ALGOS--------*/
-/*Adds based on First Algorithm*/
-mem_t * add_first(pronode_t *, mem_t *);
-/*Adds based on Best Algorithm*/
-mem_t * add_best(pronode_t *, mem_t *);
-/*Adds based on Worst Algorithm*/
-mem_t * add_worst(pronode_t *, mem_t *);

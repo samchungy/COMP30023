@@ -25,24 +25,73 @@ mem_t * init_memory(int mem_size){
   return new;
 }
 
-mem_t * algo_select(pronode_t *proc, char *algoname, mem_t *memory){
-  int freemem = memory->data_free;
+pronode_t * pop_out_longest_in_mem(mem_t **mem, int timer){
+  pronode_t *curr = (*mem)->pro_head;
+  pronode_t *prev = NULL;
+  pronode_t *longest = NULL;
+  pronode_t *longestprev = NULL;
+  if(curr->next == NULL){
+    (*mem) = restore_free_space(*mem, curr->process->startint,
+      curr->process->endint, curr->process->mem_size);
+    (*mem)->pro_head=NULL;
+    return curr;
+  }
+
+  while(curr != NULL){
+    if(longest == NULL || curr->process->time_memoryin <
+      longest->process->time_memoryin){
+        longest = curr;
+        longestprev = prev;
+      }
+    prev = curr;
+    curr = curr->next;
+  }
+  longestprev->next = longest->next;
+  (*mem) = restore_free_space(*mem, longest->process->startint,
+    longest->process->endint, longest->process->mem_size);
+  return longest;
+
+}
+
+mem_t * insert_into_mem(pronode_t *proc, char *algoname, mem_t *memory,
+  int timer, queue_t **queue, disk_t **disk){
+  int triedtoinsert = 0;
+  while(proc->time_memoryin == NOTINMEM){
+    int freemem = memory->data_free;
+    if (!triedtoinsert){
+      if(strcmp(algoname, FIRST) == 0){
+        /*run first algo*/
+        memory = add_first(proc, memory, timer);
+      }
+      else if(strcmp(algoname, BEST)==0){
+        /*run best algo*/
+        memory = add_best(proc, memory, timer);
+      }
+      else if(strcmp(algoname, WORST)==0){
+        /*run worst algo*/
+        memory = add_worst(proc, memory, timer);
+      }
+      if (freemem != memory->data_free){
+        /*Insert Failed*/
+        triedtoinsert = 1;
+      }
+      else{
+        /*Insert Succeeded*/
+        return memory;
+      }
+    }
+    else{
+      /*Make Space*/
+      pronode_t *pronod = pop_out_longest_in_mem(&mem, timer);
+      pop_from_queue_select(&(*queue),pronod);
+
+    }
+  }
   if (freemem<proc->process->mem_size){
     /*Definitely no memory slots available*/
     return memory;
   }
-  if(strcmp(algoname, FIRST) == 0){
-    /*run first algo*/
-    memory = add_first(proc, memory);
-  }
-  else if(strcmp(algoname, BEST)==0){
-    /*run best algo*/
-    memory = add_best(proc, memory);
-  }
-  else if(strcmp(algoname, WORST)==0){
-    /*run worst algo*/
-    memory = add_worst(proc, memory);
-  }
+
   else{
     printf("Invalid Algo");
     exit(EXIT_FAILURE);
@@ -50,14 +99,14 @@ mem_t * algo_select(pronode_t *proc, char *algoname, mem_t *memory){
   return memory;
 }
 
-mem_t * add_first(pronode_t *proc, mem_t *memory){
+mem_t * add_first(pronode_t *proc, mem_t *memory, int timer){
   node_t *curr = memory->free_head;
   node_t *prev = memory->free_head;
   /*Iterate over Free Lists*/
   while(curr != NULL){
     if (proc->process->mem_size <= curr->size){
       /*Found memory space! - Modify Free Space, Add Space Spec to Process*/
-      assign_to_memory(&(proc->process),&curr, &prev, &memory);
+      assign_to_memory(&(proc->process),&curr, &prev, &memory, int timer);
       return add_to_process_list(proc, memory);
     }
     else{
@@ -71,7 +120,7 @@ mem_t * add_first(pronode_t *proc, mem_t *memory){
 
 }
 
-mem_t * add_best(pronode_t *proc, mem_t *memory){
+mem_t * add_best(pronode_t *proc, mem_t *memory, int timer){
   node_t *curr = memory->free_head;
   node_t *prev = memory->free_head;
   node_t *best = NULL;
@@ -103,12 +152,12 @@ mem_t * add_best(pronode_t *proc, mem_t *memory){
   }
   else{
     /*Found one which fits*/
-    assign_to_memory(&(proc->process),&best, &bestprev, &memory);
+    assign_to_memory(&(proc->process),&best, &bestprev, &memory, int timer);
     return add_to_process_list(proc, memory);
   }
 }
 
-mem_t *add_worst(pronode_t *proc, mem_t *memory){
+mem_t *add_worst(pronode_t *proc, mem_t *memory, int timer){
   node_t *curr = memory->free_head;
   node_t *prev = memory->free_head;
   node_t *largest = NULL;
@@ -141,15 +190,16 @@ mem_t *add_worst(pronode_t *proc, mem_t *memory){
   }
   else{
     /*Found one which fits*/
-    assign_to_memory(&(proc->process),&largest, &largestprev, &memory);
+    assign_to_memory(&(proc->process),&largest, &largestprev,&memory,int timer);
     return add_to_process_list(proc, memory);
   }
 }
 
 void assign_to_memory(process_t **proc, node_t **node, node_t **prev,
-   mem_t **mem){
+   mem_t **mem, int timer){
   (*proc)->startint = ((*node)->end)+1-(*proc)->mem_size;
   (*proc)->endint = ((*node)->end);
+  (*proc)->time_memoryin = timer;
   (*node)->end = (*proc)->startint-1;
   (*node)->size -= (*proc)->mem_size;
   (*mem)->data_free -= (*proc)->mem_size;
@@ -193,7 +243,6 @@ pronode_t * pop_from_mem(mem_t **mem, process_t *proc){
 }
 
 mem_t *restore_free_space(mem_t *mem, int start, int end, int size){
-  node_t *prev = NULL;
   node_t *curr = mem->free_head;
   if (curr != NULL){
     while(curr!=NULL){

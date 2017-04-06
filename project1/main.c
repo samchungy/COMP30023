@@ -18,31 +18,44 @@ disk_t * read_from_file(char *filename, disk_t *disk){
     return disk;
 }
 
+void must_load_process(){
+
+
+}
+
 void start_simulation(char *algoname, int mem_size, int quantum, disk_t *disk){
   /*Global Timer*/
   int timer = 0;
   int quant = quantum;
   /*CPU*/
   pronode_t *CPU;
-  int isrunning = 0;
   queue_t *scheduler;
   scheduler = init_queue();
   /*Initialise Memory*/
   mem_t *memory = init_memory(mem_size);
   /*Assumes there will always be one process to start with*/
   pronode_t *temp = pop_process(&disk, timer);
-  memory = algo_select(temp, algoname, memory);
+  memory = insert_into_mem(temp, algoname, memory, timer, &scheduler, &disk);
   scheduler = insert_at_head(scheduler, temp);
   CPU = temp;
 
   while(1){
-    if (quant > 0){
-      /*Quantum has not expired*/
-      CPU->process->run_time++;
+    if (quant >= 0){
       if(CPU->process->run_time == CPU->process->job_time){
-        /*Swap*/
+        /*Job Done - Remove Process, Reset & Swap*/
+        CPU = NULL;
+        free_pronode(pop_from_mem(&mem, pop_from_queue(&scheduler)));
+        quant = quantum;
       }
-      quant--;
+      else if (quant == 0){
+        /*Quant Over. Swap*/
+
+      }
+      else{
+
+        quant--;
+        CPU->process->run_time++;
+      }
     }
     else{
       /*Quantum Expired*/

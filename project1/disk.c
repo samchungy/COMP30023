@@ -16,6 +16,7 @@
     newproc->mem_size = mem_size;
     newproc->job_time = job_time;
     newproc->run_time = 0;
+    newproc->time_memoryin = NOTINMEM;
     newpronode->process = newproc;
     newpronode->next=NULL;
 
@@ -122,16 +123,11 @@ pronode_t *pop_out_process(pronode_t **list, int *num){
   temp->next = NULL;
   return temp;
 }
-/*
-void swap_process(pronode_t *head, char *algoname){
-  pronode_t *curr = head->next;
-  pronode_t *highest = head;
-  while(curr != NULL){
-    if (highest->process.time_cr < curr->process.time_cr ||
-      (highest->process.time_cr == curr->process.time_cr &&
-        highest->process.pr_id > curr->process.pr_id)){
-          highest = curr;
-    }
-  }
+
+void free_pronode(pronode_t *pro){
+  assert(pro != NULL && pro->process != NULL);
+  free(pro->process);
+  free(pro);
 }
-*/
+
+void add_to_swapspace()
