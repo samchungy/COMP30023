@@ -10,74 +10,85 @@ queue_t *init_queue(){
   return new;
 }
 
-queue_t *insert_at_head(queue_t *queue, pronode_t *item) {
-	if(queue->head != NULL){
-    pronode_t *temp;
-    temp=queue->head;
-    queue->head = item;
-    item->next = temp;
-  }
-  else{
-    /*Queue is empty*/
-    queue->head = item;
-    queue->foot = item;
-  }
-  return queue;
-}
-
-queue_t *insert_at_foot(queue_t *queue, pronode_t *item){
+queue_t *insert_at_foot(queue_t *queue, process_t *item){
+  pronode_t *new = new_pronode(item);
   if(queue->foot != NULL){
     pronode_t *temp;
     temp = queue->foot;
-    queue->foot = item;
-    temp->next = item;
+    queue->foot = new;
+    temp->next = new;
   }
   else{
     /*Queue Footer is Empty*/
-    queue->head = item;
-    queue->foot = item;
+    queue->head = new;
+    queue->foot = new;
   }
+  queue->numitems++;
   return queue;
 }
 
-pronode_t *pop_from_queue(queue_t **queue){
+process_t *pop_from_queue(queue_t **queue){
   assert((*queue)->head != NULL);
-  pronode_t *proc = (*queue)->head;
-  proc->next = NULL;
+
+  pronode_t *pronod = (*queue)->head;
+  process_t *tempproc = pronod->process;
   (*queue)->head = (*queue)->head->next;
+  free_pronode(pronod);
   (*queue)->numitems--;
+
   if((*queue)->numitems == 1){
     (*queue)->head->next=NULL;
     (*queue)->foot = (*queue)->head;
   }
-  return proc;
-}
-
-pronode_t *pop_from_queue_select(queue_t **queue, pronode_t *pro){
-  assert((*queue)->head != NULL);
-  if((*queue)->head->process->pr_id == pro->process->pr_id){
-    pronode_t *processa = (*queue)->head;
-    processa->next = NULL;
+  else if(((*queue)->numitems == 0)){
     (*queue)->head = NULL;
     (*queue)->foot = NULL;
+  }
+  return tempproc;
+}
+
+process_t *pop_from_queue_select(queue_t **queue, process_t *pro){
+  assert((*queue)->head != NULL);
+  process_t *temp = NULL;
+  if((*queue)->head->process->pr_id == pro->pr_id){
+    pronode_t *processa = (*queue)->head;
+    (*queue)->head = (*queue)->head->next;
     (*queue)->numitems--;
-    return processa;
+    if((*queue)->numitems == 1){
+      (*queue)->head->next=NULL;
+      (*queue)->foot = (*queue)->head;
+    }
+    else if((*queue)->numitems == 0){
+      (*queue)->head = NULL;
+      (*queue)->foot = NULL;
+    }
+    temp = processa->process;
+    free_pronode(processa);
+    return temp;
   }
 
   pronode_t *curr = (*queue)->head->next;
   pronode_t *prev = (*queue)->head;
 
   while(curr!=NULL){
-    if(curr->process->pr_id == pro->process->pr_id){
+
+    if(curr->process->pr_id == pro->pr_id){
       prev->next = curr->next;
-      curr->next = NULL;
+      temp = curr->process;
       (*queue)->numitems--;
       if((*queue)->numitems == 1){
         (*queue)->head->next=NULL;
         (*queue)->foot = (*queue)->head;
       }
-      return curr;
+      else if((*queue)->numitems == 0){
+        (*queue)->head = NULL;
+        (*queue)->foot = NULL;
+      }
+      free_pronode(curr);
+      return temp;
     }
+    curr = curr->next;
   }
-  return curr;
+  /*Shouldn't reach here*/
+  return temp;
 }

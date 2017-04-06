@@ -73,10 +73,48 @@ void print_disk(disk_t *disk){
   }
 }
 
-pronode_t *pop_process(disk_t **disk, int timer){
-  process_t *ready = (*disk)->ready->process;
-  process_t *swap = (*disk)->swap->process;
+pronode_t *new_pronode(process_t *pro){
+  pronode_t *new;
+  new = malloc(sizeof(*new));
+  assert(new!=NULL);
+  new->process = pro;
+  new->next = NULL;
+  return new;
+}
 
+process_t *pop_process(disk_t **disk, int timer){
+  pronode_t *ready = (*disk)->ready;
+  pronode_t *swap = (*disk)->swap;
+
+  if((*disk)->num_swap){
+    /*If there are processes in the swap space*/
+    if((*disk)->num_ready){
+      /*If there are processes in both ready space and swap space*/
+      /*COMPARE*/
+      if(timer-ready->process->time_cr > timer-swap->process->time_swapped){
+        /*If the ready process has been on disk longer than the swapped process*/
+        return pop_out_process(&(*disk)->ready, &(*disk)->num_ready);
+      else if(timer-ready->process->time_cr ==
+        timer-swap->process->time_swapped){
+          /*If they are the same age - compare pids*/
+          if(ready->process->pr_id<swap->process->pr_id){
+            return pop_out_process(&(*disk)->ready, &(*disk)->num_ready);
+          }
+          else{
+            return pop_out_process(&(*disk)->swap, &(*disk)->num_swap)
+          }
+      }
+      else{
+
+      }
+
+      }
+    }
+    else{
+      /*No processes in ready state so use the swap space.*/
+
+    }
+  }
   if(!(*disk)->num_swap){
     if(!(*disk)->num_ready){
       /*No Processes in Disk or Swapped Space*/
@@ -116,30 +154,32 @@ pronode_t *pop_process(disk_t **disk, int timer){
   return NULL;
 }
 
-pronode_t *pop_out_process(pronode_t **list, int *num){
+process_t *pop_out_process(pronode_t **list, int *num){
   pronode_t *temp = *list;
-  *list = temp->next;
+  process_t *temper;
+  (*list) = temp->next;
   (*num)--;
-  temp->next = NULL;
-  return temp;
+  temper = temp->process;
+  free_pronode(temp);
+  return temper;
 }
 
 void free_pronode(pronode_t *pro){
   assert(pro != NULL && pro->process != NULL);
-  free(pro->process);
   free(pro);
 }
 
-void add_to_swapspace(disk_t **disk, pronode_t *pronode){
+void add_to_swapspace(disk_t **disk, process_t *process, int timer){
+  process->time_swapped = timer;
   if((*disk)->swap == NULL){
-    (*disk)->swap = pronode;
-    num_ready++;
+    (*disk)->swap = new_pronode(process);
+    (*disk)->num_swap++;
     return;
   }
   pronode_t *curr = (*disk)->swap;
   while(curr->next != NULL){
     curr = curr->next;
   }
-  curr->next = pronode;
-  num_ready++;
+  curr->next = new_pronode(process);
+  (*disk)->num_swap++;
 }

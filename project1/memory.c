@@ -20,21 +20,26 @@ mem_t * init_memory(int mem_size){
   new->data_free = mem_size;
   new->pro_head = NULL;
   new->numprocesses = 0;
+  new->numholes =1;
   /*New Free List Struct*/
   new->free_head = new_mem_node(mem_size, STARTMEMORY, mem_size, NULL);
   return new;
 }
 
-pronode_t * pop_out_longest_in_mem(mem_t **mem){
+process_t * pop_out_longest_in_mem(mem_t **mem){
   pronode_t *curr = (*mem)->pro_head;
   pronode_t *prev = NULL;
   pronode_t *longest = NULL;
   pronode_t *longestprev = NULL;
+
   if(curr->next == NULL){
     (*mem) = restore_free_space(*mem, curr->process->startint,
       curr->process->endint, curr->process->mem_size);
     (*mem)->pro_head=NULL;
-    return curr;
+    process_t *temp;
+    temp = curr->process;
+    free_pronode(curr);
+    return temp;
   }
 
   while(curr != NULL){
@@ -50,12 +55,14 @@ pronode_t * pop_out_longest_in_mem(mem_t **mem){
   longest->next = NULL;
   (*mem) = restore_free_space(*mem, longest->process->startint,
     longest->process->endint, longest->process->mem_size);
-  return longest;
-
+    process_t *temp = longest->process;
+    free_pronode(longest);
+  return temp;
 }
 
-mem_t * insert_into_mem(pronode_t *proc, char *algoname, mem_t *memory,
+mem_t * insert_into_mem(process_t *process, char *algoname, mem_t *memory,
   int timer, queue_t **queue, disk_t **disk){
+  pronode_t *proc = new_pronode(process);
   int triedtoinsert = 0;
   while(proc->process->time_memoryin == NOTINMEM){
     int freemem = memory->data_free;
@@ -72,20 +79,23 @@ mem_t * insert_into_mem(pronode_t *proc, char *algoname, mem_t *memory,
         /*run worst algo*/
         memory = add_worst(proc, memory, timer);
       }
-      if (freemem != memory->data_free){
+      if (freemem == memory->data_free){
         /*Insert Failed*/
+        printf("Insert Failed\n");
         triedtoinsert = 1;
       }
       else{
         /*Insert Succeeded*/
+        printf("Insert Succeeded\n");
         return memory;
       }
     }
     else{
       /*Make Space*/
-      pronode_t *pronod = pop_out_longest_in_mem(&memory);
-      pop_from_queue_select(&(*queue),pronod);
-      add_to_swapspace(&(*disk),pronod);
+      process_t *procc = pop_out_longest_in_mem(&memory);
+      pop_from_queue_select(&(*queue),procc);
+      add_to_swapspace(&(*disk),procc, timer);
+      triedtoinsert = 0;
     }
   }
 
@@ -222,10 +232,10 @@ void free_node(node_t *node){
   free(node);
 }
 
-pronode_t * pop_from_mem(mem_t **mem, pronode_t *proc){
+pronode_t * pop_from_mem(mem_t **mem, process_t *proc){
   pronode_t *curr = (*mem)->pro_head;
   pronode_t *prev = (*mem)->pro_head;
-  while(curr->process->pr_id != proc->process->pr_id){
+  while(curr->process->pr_id != proc->pr_id){
     prev = curr;
     curr = curr->next;
   }
@@ -252,6 +262,7 @@ mem_t *restore_free_space(mem_t *mem, int start, int end, int size){
           else{
             /**Create a new node, the next data node does not connect*/
             mem->free_head = new_mem_node(size, start, end, curr);
+            mem->numholes++;
             return mem;
           }
         }
@@ -272,6 +283,7 @@ mem_t *restore_free_space(mem_t *mem, int start, int end, int size){
               curr->end = curr->next->end;
               node_t *temp = curr->next->next;
               free_node(curr->next);
+              mem->numholes--;
               curr->next = temp;
               return mem;
             }
@@ -281,11 +293,13 @@ mem_t *restore_free_space(mem_t *mem, int start, int end, int size){
             if (curr->next == NULL){
               /*No data available so create a new node*/
               curr->next = new_mem_node(size, start, end, NULL);
+              mem->numholes++;
               return mem;
             }
             else if (!(curr->next->start <= end+1)){
               /*Another Node Available, it's larger than free space address*/
               curr->next = new_mem_node(size, start, end, curr->next);
+              mem->numholes++;
               return mem;
             }
             else{
@@ -300,6 +314,7 @@ mem_t *restore_free_space(mem_t *mem, int start, int end, int size){
   else{
     /*Free List is Empty - Create a new node*/
     mem->free_head = new_mem_node(size, start, end, NULL);
+    mem->numholes++;
     return mem;
   }
 }

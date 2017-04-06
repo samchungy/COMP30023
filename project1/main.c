@@ -18,15 +18,22 @@ disk_t * read_from_file(char *filename, disk_t *disk){
     return disk;
 }
 
-void swap(mem_t **memory, pronode_t **temp, queue_t **scheduler, char **algoname,
-disk_t **disk, int timer){
+void swap(mem_t **mem, process_t **temp, queue_t **scheduler, char **algoname,
+disk_t **disk, int timer, int mem_size){
   (*temp) = pop_process(&(*disk), timer);
-  (*memory) = insert_into_mem(*temp, *algoname, *memory, timer, &(*scheduler), &(*disk));
+  if (*temp == NULL){
+    printf("fuck offf\n");
+  }
+  fflush(stdout);
+  (*mem) = insert_into_mem(*temp, *algoname,*mem,timer,&(*scheduler),&(*disk));
   (*scheduler) = insert_at_foot((*scheduler), *temp);
+  printf("time %d, %d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n",
+    timer, (*temp)->pr_id, (*mem)->numprocesses, (*mem)->numholes,
+      (int)ceil((double)(mem_size-(*mem)->data_free)/(double)mem_size*100));
 };
 
-void schedule(pronode_t **CPU, queue_t **scheduler){
-  (*CPU)=(*scheduler)->head;
+void schedule(process_t **CPU, queue_t **scheduler){
+  (*CPU)=(*scheduler)->head->process;
 }
 
 void start_simulation(char *algoname, int mem_size, int quantum, disk_t *disk){
@@ -34,39 +41,48 @@ void start_simulation(char *algoname, int mem_size, int quantum, disk_t *disk){
   int timer = 0;
   int quant = quantum;
   /*CPU*/
-  pronode_t *CPU;
-  pronode_t *temp;
+  process_t *CPU = NULL;
+  process_t *temp = NULL;
   queue_t *scheduler;
   scheduler = init_queue();
   /*Initialise Memory*/
   mem_t *memory = init_memory(mem_size);
   /*Assumes there will always be one process to start with*/
-  swap(&memory, &temp, &scheduler, &algoname, &disk, timer);
+  swap(&memory, &temp, &scheduler, &algoname, &disk, timer, mem_size);
   schedule(&CPU, &scheduler);
 
   while(1){
     if (quant >= 0){
-      if(CPU->process->run_time == CPU->process->job_time){
+      if(CPU->run_time == CPU->job_time){
         /*Job Done - Remove Process, Reset & Swap*/
         CPU = NULL;
         free_pronode(pop_from_mem(&memory, pop_from_queue(&scheduler)));
-        swap(&memory, &temp, &scheduler, &algoname, &disk, timer);
+        swap(&memory, &temp, &scheduler, &algoname, &disk, timer, mem_size);
         schedule(&CPU, &scheduler);
         quant = quantum;
+
       }
       else if (quant == 0){
+        printf("pr_id: %d\n",temp->pr_id);
+        fflush(stdout);
         /*Quant Over. Swap*/
         CPU = NULL;
-        insert_at_foot((*scheduler), pop_from_queue(&scheduler));
-        swap(&memory, &temp, &scheduler, &algoname, &disk, timer);
+        printf("pr_id: %d\n",temp->pr_id);
+        fflush(stdout);
+        scheduler = insert_at_foot(scheduler, pop_from_queue(&scheduler));
+        printf("pr_id: %d\n",temp->pr_id);
+        fflush(stdout);
+        temp = NULL;
+        swap(&memory, &temp, &scheduler, &algoname, &disk, timer, mem_size);
         schedule(&CPU, &scheduler);
         quant = quantum;
       }
       else{
         quant--;
-        CPU->process->run_time++;
+        CPU->run_time++;
       }
     }
+    printf("%d,%d\n",quant, temp->pr_id);
     timer++;
   }
 
