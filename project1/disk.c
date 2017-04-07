@@ -124,7 +124,7 @@ process_t *pop_process(disk_t **disk, int timer){
   pronode_t *swap = (*disk)->swap;
 
   if((*disk)->num_swap){
-    printswap(*disk);
+    //printswap(*disk);
     printf("Fuckers in Swap Space\n");
     /*If there are processes in the swap space*/
     if((*disk)->num_ready && timer-ready->process->time_cr >= 0){
@@ -199,5 +199,5 @@ void add_to_swapspace(disk_t **disk, process_t *process, int timer){
   }
   curr->next = new_pronode(process);
   (*disk)->num_swap++;
-  printswap(*disk);
+  //printswap(*disk);
 }
