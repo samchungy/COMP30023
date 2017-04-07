@@ -34,6 +34,7 @@ disk_t **disk, int timer, int mem_size){
       printf("FUCKKKKKKKKKKK\n");
       fflush(stdout);
       printf("DONNNNNNNNNNNNNEEEEEEE\n");
+      printf("time %d, simulation finished.\n",timer);
       exit(EXIT_FAILURE);
     }
     else{
@@ -47,7 +48,6 @@ disk_t **disk, int timer, int mem_size){
     (*scheduler) = insert_at_foot((*scheduler), *temp);
     printmsg(timer, (*temp)->pr_id, (*scheduler)->numitems, (*mem)->numholes,
       (int)ceil((double)(mem_size-(*mem)->data_free)/(double)mem_size*100), mem_size-(*mem)->data_free);
-    printdatachunks(*mem);
   }
 };
 
@@ -74,14 +74,11 @@ void start_simulation(char *algoname, int mem_size, int quantum, disk_t *disk){
     if (quant >= 0){
       if(CPU->run_time == CPU->job_time){
         /*Job Done - Remove Process, Reset & Swap*/
-        //printf("Job %d dun, size %d\n", CPU->pr_id, CPU->mem_size);
         temp = NULL;
         process_t *proc = pop_from_queue(&scheduler);
-        //printf("%d POOOOPPPED OUT BITCH\n",proc->pr_id);
         process_t *boo = pop_from_mem(&memory, proc);
         free(boo);
         swap(&memory, &temp, &scheduler, &algoname, &disk, timer, mem_size);
-        //printqueue(scheduler, timer);
         schedule(&CPU, &scheduler);
         quant=quantum;
       }
@@ -92,7 +89,6 @@ void start_simulation(char *algoname, int mem_size, int quantum, disk_t *disk){
         if(CPU==scheduler->head->process){
           scheduler = insert_at_foot(scheduler, pop_from_queue(&scheduler));
         }
-        //printqueue(scheduler, timer);
         schedule(&CPU, &scheduler);
         quant = quantum;
       }
@@ -133,7 +129,6 @@ int main(int argc, char *argv[]){
                    exit(EXIT_FAILURE);
           }
   }
-  /*printf("%s, %s, %d, %d", filename, algoname, memsize, quantum);*/
 
   /*Read File Input*/
   disk = create_disk();

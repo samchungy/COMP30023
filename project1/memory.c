@@ -79,6 +79,8 @@ mem_t * insert_into_mem(process_t *process, char *algoname, mem_t *memory,
       }
       else if(strcmp(algoname, BEST)==0){
         /*run best algo*/
+        printf("BEFORE\n");
+        printdatachunks(memory);
         memory = add_best(proc, memory, timer);
       }
       else if(strcmp(algoname, WORST)==0){
@@ -116,6 +118,9 @@ mem_t * add_first(pronode_t *proc, mem_t *memory, int timer){
   while(curr != NULL){
     if (proc->process->mem_size <= curr->size){
       /*Found memory space! - Modify Free Space, Add Space Spec to Process*/
+      if(curr->size == proc->process->mem_size){
+        memory->free_head = curr->next;
+      }
       assign_to_memory(&(proc->process),&curr, &prev, &memory, timer);
       return add_to_process_list(proc, memory);
     }
@@ -137,6 +142,8 @@ mem_t * add_best(pronode_t *proc, mem_t *memory, int timer){
       printf("One cell avail\n");
       /*Only 1 cell available and of the correct size*/
       assign_to_memory(&(proc->process),&curr, &prev, &memory, timer);
+      printf("AFTER:\n");
+      printdatachunks(memory);
       return add_to_process_list(proc, memory);
     }
     else{
@@ -170,30 +177,47 @@ mem_t * add_best(pronode_t *proc, mem_t *memory, int timer){
     return memory;
   }
   if (bestprev == NULL){
-    memory->free_head = best->next;
+    printf("BestPrev is NULL\n");
+    if(best->size == proc->process->mem_size){
+      memory->free_head = best->next;
+    }
     assign_to_memory(&(proc->process),&best, &bestprev, &memory, timer);
+    printf("AFTER 3:\n");
+    printdatachunks(memory);
     return add_to_process_list(proc, memory);
   }
   assign_to_memory(&(proc->process),&best, &bestprev, &memory, timer);
+  printf("AFTER 4:\n");
+  printdatachunks(memory);
   return add_to_process_list(proc, memory);
 }
 
-
-mem_t *add_worst(pronode_t *proc, mem_t *memory, int timer){
+mem_t * add_worst(pronode_t *proc, mem_t *memory, int timer){
   node_t *curr = memory->free_head;
-  node_t *prev = memory->free_head;
-  node_t *largest = NULL;
-  node_t *largestprev;
+  node_t *prev = NULL;
+  node_t *best = NULL;
+  node_t *bestprev = NULL;
 
-  /*Iterate over Free List*/
-  while(curr!=NULL){
+  if (curr->next == NULL){
     if (proc->process->mem_size <= curr->size){
-      /*Foud a data spot which fits*/
-      if(largest==NULL || curr->size - proc->process->mem_size >=
-        largest->size - proc->process->mem_size){
-        /*First Case or Item is Smaller/Equal to Best*/
-        largest = curr;
-        largestprev = prev;
+      /*Only 1 cell available and of the correct size*/
+      assign_to_memory(&(proc->process),&curr, &prev, &memory, timer);
+      printdatachunks(memory);
+      return add_to_process_list(proc, memory);
+    }
+    else{
+      /*Memory not big enough*/
+      return memory;
+    }
+  }
+
+  while(curr!=NULL){
+    if(proc->process->mem_size <= curr->size){
+      /*found a data spot which is of the right size*/
+      if(best == NULL || curr->size-proc->process->mem_size >
+        best->size - proc->process->mem_size){
+        best = curr;
+        bestprev = prev;
       }
       else{
         prev = curr;
@@ -206,15 +230,24 @@ mem_t *add_worst(pronode_t *proc, mem_t *memory, int timer){
     }
   }
 
-  if(largest == NULL){
-    /*No Memory Cell Fits*/
+  if(best == NULL){
+    /*No Space Found*/
     return memory;
   }
-  else{
-    /*Found one which fits*/
-    assign_to_memory(&(proc->process),&largest, &largestprev,&memory,timer);
+  if (bestprev == NULL){
+    printf("BestPrev is NULL\n");
+    if(best->size == proc->process->mem_size){
+      memory->free_head = best->next;
+    }
+    assign_to_memory(&(proc->process),&best, &bestprev, &memory, timer);
+    printf("AFTER 3:\n");
+    printdatachunks(memory);
     return add_to_process_list(proc, memory);
   }
+  assign_to_memory(&(proc->process),&best, &bestprev, &memory, timer);
+  printf("AFTER 4:\n");
+  printdatachunks(memory);
+  return add_to_process_list(proc, memory);
 }
 
 void assign_to_memory(process_t **proc, node_t **node, node_t **prev,
@@ -226,7 +259,7 @@ void assign_to_memory(process_t **proc, node_t **node, node_t **prev,
   (*node)->size -= (*proc)->mem_size;
   (*mem)->data_free -= (*proc)->mem_size;
   printf("Assigned %d - %d\n", (*proc)->startint, (*proc)->endint);
-  printf("Data Free %d\n", (*node)->start);
+  printf("Node Size %d\n", (*node)->size);
   if ((*node)->size == 0){
     printf("KILLED\n");
     if((*prev)!=NULL){
@@ -342,7 +375,7 @@ mem_t *restore_free_space(mem_t *mem, int start, int end, int size){
               mem->numholes++;
               return mem;
             }
-            else if (!(curr->next->start <= end+1)){
+            else if ((curr->next->start > end+1)){
               /*Another Node Available, it's larger than free space address*/
               curr->next = new_mem_node(size, start, end, curr->next);
               mem->numholes++;
@@ -371,4 +404,5 @@ void printdatachunks(mem_t *mem){
     printf("%d to %d free SIZE: %d\n", curr->start, curr->end, curr->size);
     curr = curr->next;
   }
+  printf("NO MORE NODES\n");
 }
