@@ -49,46 +49,36 @@ process_t *pop_from_queue(queue_t **queue){
 
 process_t *pop_from_queue_select(queue_t **queue, process_t *pro){
   assert((*queue)->head != NULL);
-  process_t *temp = NULL;
-  if((*queue)->head->process->pr_id == pro->pr_id){
-    pronode_t *processa = (*queue)->head;
-    (*queue)->head = (*queue)->head->next;
+  pronode_t *curr = (*queue)->head;
+  pronode_t *prev = NULL;
+  process_t *temp;
+
+  if(curr->next == NULL){
+    /*Item has to be the process in question*/
+    temp = (*queue)->head->process;
+    (*queue)->head = NULL;
+    (*queue)->foot = NULL;
     (*queue)->numitems--;
-    if((*queue)->numitems == 1){
-      (*queue)->head->next=NULL;
-      (*queue)->foot = (*queue)->head;
-    }
-    else if((*queue)->numitems == 0){
-      (*queue)->head = NULL;
-      (*queue)->foot = NULL;
-    }
-    temp = processa->process;
-    free_pronode(processa);
+    free_pronode(curr);
     return temp;
   }
 
-  pronode_t *curr = (*queue)->head->next;
-  pronode_t *prev = (*queue)->head;
-
-  while(curr!=NULL){
-
-    if(curr->process->pr_id == pro->pr_id){
-      prev->next = curr->next;
-      temp = curr->process;
-      (*queue)->numitems--;
-      if((*queue)->numitems == 1){
-        (*queue)->head->next=NULL;
-        (*queue)->foot = (*queue)->head;
+  while(curr != NULL){
+      if(curr->process->pr_id == pro->pr_id){
+        /*Found*/
+        temp = curr->process;
+        prev->next = curr->next;
+        (*queue)->numitems--;
+        if(curr->next == NULL){
+          (*queue)->foot = prev;
+        }
+        free_pronode(curr);
+        return temp;
       }
-      else if((*queue)->numitems == 0){
-        (*queue)->head = NULL;
-        (*queue)->foot = NULL;
-      }
-      free_pronode(curr);
-      return temp;
-    }
+    prev = curr;
     curr = curr->next;
   }
-  /*Shouldn't reach here*/
-  return temp;
+  /*Shouldn't hit here*/
+  printf("FAILED QUEUE POP\n");
+  exit(EXIT_FAILURE);
 }

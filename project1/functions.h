@@ -67,8 +67,6 @@ typedef struct queue_t{
  disk_t *create_disk();
 
 /*-------DISK FUNCTIONS-------*/
-/*Creates List of Process Nodes*/
-pronode_t *new_pronodelist();
 /*Reads data, creates a new process and adds it to the linked list*/
 pronode_t * create_process(int, int, int, int, pronode_t *);
 /*Chooses & Pops out a process based on the spec rules**/
@@ -79,6 +77,8 @@ process_t * pop_out_process(pronode_t **, int *num);
 void add_to_swapspace(disk_t **, process_t *, int);
 /*Frees Pronode**/
 void free_pronode(pronode_t *);
+/*Pop out highest priority, longest in swap space*/
+process_t *pop_longhigh_swap(disk_t **);
 
 /*-------MEMORY FUNCTIONS-------*/
 /*Initialises the memory struct*/
@@ -123,3 +123,5 @@ queue_t *insert_at_foot(queue_t *, process_t *);
 
 /*Prints data out -- TEST FUNCTION*/
 void print_disk(disk_t *);
+void printqueue(queue_t *);
+void printswap(disk_t *);

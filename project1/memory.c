@@ -28,11 +28,13 @@ mem_t * init_memory(int mem_size){
 
 process_t * pop_out_longest_in_mem(mem_t **mem){
   pronode_t *curr = (*mem)->pro_head;
+  assert(curr != NULL);
   pronode_t *prev = NULL;
   pronode_t *longest = NULL;
   pronode_t *longestprev = NULL;
 
   if(curr->next == NULL){
+
     (*mem) = restore_free_space(*mem, curr->process->startint,
       curr->process->endint, curr->process->mem_size);
     (*mem)->pro_head=NULL;
@@ -51,8 +53,14 @@ process_t * pop_out_longest_in_mem(mem_t **mem){
     prev = curr;
     curr = curr->next;
   }
-  longestprev->next = longest->next;
-  longest->next = NULL;
+
+  if (longestprev == NULL){
+    (*mem)->pro_head = longest->next;
+  }
+  else{
+    longestprev->next = longest->next;
+  }
+
   (*mem) = restore_free_space(*mem, longest->process->startint,
     longest->process->endint, longest->process->mem_size);
     process_t *temp = longest->process;
@@ -87,22 +95,32 @@ mem_t * insert_into_mem(process_t *process, char *algoname, mem_t *memory,
       else{
         /*Insert Succeeded*/
         printf("Insert Succeeded\n");
+        printqueue(*queue);
         return memory;
       }
     }
     else{
       /*Make Space*/
+      printqueue(*queue);
       process_t *procc = pop_out_longest_in_mem(&memory);
-      printf("Popped the oldest out\n");
-      printf("%d\n",procc->pr_id);
+      printf("Popped out: %d\n",procc->pr_id);
       fflush(stdout);
       pop_from_queue_select(&(*queue),procc);
+      printqueue(*queue);
       add_to_swapspace(&(*disk),procc, timer);
       triedtoinsert = 0;
     }
   }
 
   return memory;
+}
+
+void printqueue(queue_t *q){
+  pronode_t *qitem = q->head;
+  while(qitem != NULL){
+    printf("Process: %d in q\n",qitem->process->pr_id);
+    qitem = qitem->next;
+  }
 }
 
 mem_t * add_first(pronode_t *proc, mem_t *memory, int timer){
