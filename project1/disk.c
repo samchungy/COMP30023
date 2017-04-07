@@ -74,7 +74,7 @@ pronode_t *new_pronode(process_t *pro){
 void printswap(disk_t *disk){
   pronode_t *curr = disk->swap;
   while(curr != NULL){
-    printf("Swap Space: Process - %d\n", curr->process->pr_id);
+    //printf("Swap Space: Process - %d\n", curr->process->pr_id);
     curr = curr->next;
   }
 }
@@ -95,12 +95,12 @@ process_t *pop_longhigh_swap(disk_t **disk){
     (*disk)->swap = NULL;
     return temp;
   }
+  best = curr;
   prev = curr;
   curr = curr->next;
 
   while(curr != NULL){
-    if(best == NULL || curr->process->time_swapped <
-      best->process->time_swapped){
+    if(curr->process->time_swapped < best->process->time_swapped){
       best = curr;
       bestprev = prev;
     }
@@ -112,11 +112,33 @@ process_t *pop_longhigh_swap(disk_t **disk){
     prev = curr;
     curr = curr->next;
   }
+  if (bestprev == NULL){
+    temp = best->process;
+    (*disk)->num_swap--;
+    (*disk)->swap = (*disk)->swap->next;
+    free_pronode(best);
+    return temp;
+  }
+
   temp = best->process;
   bestprev->next = best->next;
   (*disk)->num_swap--;
   free_pronode(best);
   return temp;
+}
+
+int get_highest_pr_id(pronode_t *pn, int timeondisk, int timer){
+  assert(pn != NULL);
+  pronode_t *curr = pn;
+  int highestpr = curr->process->pr_id;
+  while(curr != NULL){
+    if(curr->process->pr_id < highestpr
+    && timeondisk == timer-curr->process->time_swapped){
+      highestpr = curr->process->pr_id;
+    }
+    curr=curr->next;
+  }
+  return highestpr;
 }
 
 process_t *pop_process(disk_t **disk, int timer){
@@ -125,30 +147,26 @@ process_t *pop_process(disk_t **disk, int timer){
 
   if((*disk)->num_swap){
     printswap(*disk);
-    printf("Fuckers in Swap Space\n");
     /*If there are processes in the swap space*/
     if((*disk)->num_ready && timer-ready->process->time_cr >= 0){
-      printf("%d",timer-swap->process->time_swapped);
       /*If there are processes in both ready space and swap space*/
       /*COMPARE*/
       if(timer-ready->process->time_cr > timer-swap->process->time_swapped){
         /*If the ready process has been on disk longer than the swapped process*/
-        printf("FELL HERE\n");
-        return pop_out_process(&(*disk)->ready, &(*disk)->num_ready);
+        return pop_out_process(&(*disk), &(*disk)->num_ready, timer);
       }
       else if(timer-ready->process->time_cr ==
         timer-swap->process->time_swapped){
-          printf("OR HERE\n");
           /*If they are the same age - compare pids*/
-          if(ready->process->pr_id<swap->process->pr_id){
-            return pop_out_process(&(*disk)->ready, &(*disk)->num_ready);
+          if(ready->process->pr_id<get_highest_pr_id(swap,
+            timer-ready->process->time_cr, timer)){
+            return pop_out_process(&(*disk), &(*disk)->num_ready, timer);
           }
           else{
             return pop_longhigh_swap(&(*disk));
           }
       }
       else{
-        printf("HERE 1\n");
         /*Swapped Process is older*/
         return pop_longhigh_swap(&(*disk));
       }
@@ -160,7 +178,7 @@ process_t *pop_process(disk_t **disk, int timer){
   }
   else{
     if((*disk)->num_ready && timer-ready->process->time_cr >= 0){
-      return pop_out_process(&(*disk)->ready, &(*disk)->num_ready);
+      return pop_out_process(&(*disk), &(*disk)->num_ready, timer);
     }
     else{
       /*Nothing available to return right now*/
@@ -169,14 +187,43 @@ process_t *pop_process(disk_t **disk, int timer){
   }
 }
 
-process_t *pop_out_process(pronode_t **list, int *num){
-  pronode_t *temp = *list;
+process_t *pop_out_process(disk_t **disk, int *num, int timer){
   process_t *temper;
-  (*list) = temp->next;
-  (*num)--;
-  temper = temp->process;
-  free_pronode(temp);
-  return temper;
+  pronode_t *curr = (*disk)->ready;
+  pronode_t *prev = NULL;
+  pronode_t *best = (*disk)->ready;
+  pronode_t *bestprev = NULL;
+  int benchmark = timer-best->process->time_cr;
+
+  while(curr != NULL){
+    if (timer-curr->process->time_cr != benchmark){
+      break;
+    }
+    else if (timer-curr->process->time_cr >= 0 &&
+      curr->process->pr_id < best->process->pr_id){
+      best = curr;
+      bestprev = prev;
+    }
+    prev = curr;
+    curr = curr->next;
+  }
+
+  if(bestprev == NULL){
+    /*First Item*/
+    temper = best->process;
+    (*disk)->ready = best->next;
+    (*num)--;
+    free_pronode(best);
+    return temper;
+    }
+  else{
+    temper = best->process;
+    bestprev->next = best->next;
+    (*num)--;
+    free_pronode(best);
+    return temper;
+  }
+
 }
 
 void free_pronode(pronode_t *pro){
@@ -189,10 +236,8 @@ void add_to_swapspace(disk_t **disk, process_t *process, int timer){
   if((*disk)->swap == NULL){
     (*disk)->swap = new_pronode(process);
     (*disk)->num_swap++;
-    printf("NEW SWAP SAPCE: %d\n", (*disk)->swap->process->pr_id);
     return;
   }
-  printf("Added to Swap\n");
   pronode_t *curr = (*disk)->swap;
   while(curr->next!= NULL){
     curr = curr->next;

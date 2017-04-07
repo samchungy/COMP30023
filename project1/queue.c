@@ -55,7 +55,7 @@ process_t *pop_from_queue_select(queue_t **queue, process_t *pro){
 
   if(curr->next == NULL){
     /*Item has to be the process in question*/
-    temp = (*queue)->head->process;
+    temp = curr->process;
     (*queue)->head = NULL;
     (*queue)->foot = NULL;
     (*queue)->numitems--;
@@ -63,22 +63,39 @@ process_t *pop_from_queue_select(queue_t **queue, process_t *pro){
     return temp;
   }
 
-  while(curr != NULL){
-      if(curr->process->pr_id == pro->pr_id){
-        /*Found*/
-        temp = curr->process;
-        prev->next = curr->next;
-        (*queue)->numitems--;
-        if(curr->next == NULL){
-          (*queue)->foot = prev;
-        }
-        free_pronode(curr);
-        return temp;
-      }
+  while(curr->process->pr_id != pro->pr_id){
     prev = curr;
     curr = curr->next;
   }
-  /*Shouldn't hit here*/
-  printf("FAILED QUEUE POP\n");
-  exit(EXIT_FAILURE);
+  if (prev == NULL){
+    /*Item is head of list*/
+    (*queue)->head = curr->next;
+    (*queue)->numitems--;
+    temp = curr->process;
+    free_pronode(curr);
+    return temp;
+  }
+
+  temp = curr->process;
+  prev->next = curr->next;
+  (*queue)->numitems--;
+  if(prev->next == NULL){
+    (*queue)->foot = prev;
+  }
+  if((*queue)->numitems == 1){
+    (*queue)->head = prev;
+  }
+  free_pronode(curr);
+  return temp;
+}
+
+
+void printqueue(queue_t *q, int timer){
+  pronode_t *qitem = q->head;
+  while(qitem != NULL){
+    printf("Process: %d in q - NEEDS:%d RUN: %d SIZE:%d TIME:%d TIMEOD: %d \n",qitem->process->pr_id,
+  qitem->process->job_time, qitem->process->run_time,qitem->process->mem_size, timer, timer-qitem->process->time_memoryin);
+    qitem = qitem->next;
+  }
+  fflush(stdout);
 }

@@ -18,22 +18,26 @@ disk_t * read_from_file(char *filename, disk_t *disk){
     return disk;
 }
 
-void printmsg(int time, int load, int numpro, int numho, int menuse){
-  printf("time %d, %d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n",
-    time, load, numpro, numho, menuse);
+void printmsg(int time, int load, int numpro, int numho, int menuse, int anotha){
+  printf("time %d, %d loaded, numprocesses=%d, numholes=%d, memusage=%d%%, memused=%d\n",
+    time, load, numpro, numho, menuse, anotha);
 }
 
 void swap(mem_t **mem, process_t **temp, queue_t **scheduler, char **algoname,
 disk_t **disk, int timer, int mem_size){
   (*temp) = pop_process(&(*disk), timer);
   if (*temp == NULL){
-    if ((*disk)->num_ready == 0){
+    printf("FAILED TO POOP\n");
+    if ((*disk)->num_ready == 0 && (*scheduler)->numitems == 0){
       /*No more processses to be created*/
       /**DONE STATE*/
-      printf("done");
+      printf("FUCKKKKKKKKKKK\n");
       fflush(stdout);
+      printf("DONNNNNNNNNNNNNEEEEEEE\n");
+      exit(EXIT_FAILURE);
     }
     else{
+      printf("WAAAAAITING\n");
       /*Have to wait for processes to be created*/
       return;
     }
@@ -41,8 +45,9 @@ disk_t **disk, int timer, int mem_size){
   else{
     (*mem) = insert_into_mem(*temp, *algoname,*mem,timer,&(*scheduler),&(*disk));
     (*scheduler) = insert_at_foot((*scheduler), *temp);
-    printmsg(timer, (*temp)->pr_id, (*mem)->numprocesses, (*mem)->numholes,
-      (int)ceil((double)(mem_size-(*mem)->data_free)/(double)mem_size*100));
+    printmsg(timer, (*temp)->pr_id, (*scheduler)->numitems, (*mem)->numholes,
+      (int)ceil((double)(mem_size-(*mem)->data_free)/(double)mem_size*100), mem_size-(*mem)->data_free);
+    printdatachunks(*mem);
   }
 };
 
@@ -69,22 +74,25 @@ void start_simulation(char *algoname, int mem_size, int quantum, disk_t *disk){
     if (quant >= 0){
       if(CPU->run_time == CPU->job_time){
         /*Job Done - Remove Process, Reset & Swap*/
-        printf("Job dun\n");
-        CPU = NULL;
+        //printf("Job %d dun, size %d\n", CPU->pr_id, CPU->mem_size);
         temp = NULL;
-        pronode_t *boo = pop_from_mem(&memory, pop_from_queue(&scheduler));
-        free(boo->process);
-        free_pronode(boo);
+        process_t *proc = pop_from_queue(&scheduler);
+        //printf("%d POOOOPPPED OUT BITCH\n",proc->pr_id);
+        process_t *boo = pop_from_mem(&memory, proc);
+        free(boo);
         swap(&memory, &temp, &scheduler, &algoname, &disk, timer, mem_size);
+        //printqueue(scheduler, timer);
         schedule(&CPU, &scheduler);
         quant=quantum;
       }
       else if (quant == 0){
         /*Quant Over. Swap*/
-        CPU = NULL;
         temp = NULL;
         swap(&memory, &temp, &scheduler, &algoname, &disk, timer, mem_size);
-        scheduler = insert_at_foot(scheduler, pop_from_queue(&scheduler));
+        if(CPU==scheduler->head->process){
+          scheduler = insert_at_foot(scheduler, pop_from_queue(&scheduler));
+        }
+        //printqueue(scheduler, timer);
         schedule(&CPU, &scheduler);
         quant = quantum;
       }

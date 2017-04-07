@@ -51,7 +51,6 @@ typedef struct node_t{
 typedef struct mem_t{
   node_t *free_head;
   pronode_t *pro_head;
-  int numprocesses;
   int data_free;
   int numholes;
 } mem_t;
@@ -72,13 +71,15 @@ pronode_t * create_process(int, int, int, int, pronode_t *);
 /*Chooses & Pops out a process based on the spec rules**/
 process_t * pop_process(disk_t **, int);
 /*Changes the pronode list and pops out the process*/
-process_t * pop_out_process(pronode_t **, int *num);
+process_t * pop_out_process(disk_t **, int *, int);
 /*Adds process to swap space*/
 void add_to_swapspace(disk_t **, process_t *, int);
 /*Frees Pronode**/
 void free_pronode(pronode_t *);
 /*Pop out highest priority, longest in swap space*/
 process_t *pop_longhigh_swap(disk_t **);
+/*Gets Swap Space Highest Priority*/
+int get_highest_pr_id(pronode_t *, int, int);
 
 /*-------MEMORY FUNCTIONS-------*/
 /*Initialises the memory struct*/
@@ -90,7 +91,7 @@ mem_t * add_to_process_list(pronode_t *, mem_t *);
 /*Takes away free Space & assigns process memory ints*/
 void assign_to_memory(process_t **, node_t **, node_t **, mem_t **, int);
 /*Removeds Process from Memory*/
-pronode_t * pop_from_mem(mem_t **, process_t *);
+process_t * pop_from_mem(mem_t **, process_t *);
 /*Pop out process which has been in memory the longest*/
 process_t * pop_out_longest_in_mem(mem_t **);
 /*Creates a new memory node*/
@@ -123,5 +124,6 @@ queue_t *insert_at_foot(queue_t *, process_t *);
 
 /*Prints data out -- TEST FUNCTION*/
 void print_disk(disk_t *);
-void printqueue(queue_t *);
+void printqueue(queue_t *, int);
 void printswap(disk_t *);
+void printdatachunks(mem_t *);
