@@ -18,27 +18,25 @@ disk_t * read_from_file(char *filename, disk_t *disk){
     return disk;
 }
 
-void printmsg(int time, int load, int numpro, int numho, int menuse, int anotha){
-  printf("time %d, %d loaded, numprocesses=%d, numholes=%d, memusage=%d%%, memused=%d\n",
-    time, load, numpro, numho, menuse, anotha);
+void printmsg(int time, int load, int numpro, int numho, int menuse){
+  printf("time %d, %d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n",
+    time, load, numpro, numho, menuse);
 }
 
 void swap(mem_t **mem, process_t **temp, queue_t **scheduler, char **algoname,
 disk_t **disk, int timer, int mem_size){
   (*temp) = pop_process(&(*disk), timer);
   if (*temp == NULL){
-    printf("FAILED TO POOP\n");
     if ((*disk)->num_ready == 0 && (*scheduler)->numitems == 0){
       /*No more processses to be created*/
       /**DONE STATE*/
-      printf("FUCKKKKKKKKKKK\n");
-      fflush(stdout);
-      printf("DONNNNNNNNNNNNNEEEEEEE\n");
       printf("time %d, simulation finished.\n",timer);
-      exit(EXIT_FAILURE);
+      free_disk(&(*disk));
+      free_all_mem(&(*mem));
+      freequeue(&(*scheduler));
+      exit(EXIT_SUCCESS);
     }
     else{
-      printf("WAAAAAITING\n");
       /*Have to wait for processes to be created*/
       return;
     }
@@ -47,7 +45,7 @@ disk_t **disk, int timer, int mem_size){
     (*mem) = insert_into_mem(*temp, *algoname,*mem,timer,&(*scheduler),&(*disk));
     (*scheduler) = insert_at_foot((*scheduler), *temp);
     printmsg(timer, (*temp)->pr_id, (*scheduler)->numitems, (*mem)->numholes,
-      (int)ceil((double)(mem_size-(*mem)->data_free)/(double)mem_size*100), mem_size-(*mem)->data_free);
+      (int)ceil((double)(mem_size-(*mem)->data_free)/(double)mem_size*100));
   }
 };
 
@@ -133,7 +131,6 @@ int main(int argc, char *argv[]){
   /*Read File Input*/
   disk = create_disk();
   disk = read_from_file(filename, disk);
-  /*print_disk(disk);*/
   start_simulation(algoname, memsize, quantum, disk);
 
   return 0;

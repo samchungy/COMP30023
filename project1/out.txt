@@ -1,0 +1,9 @@
+1st Run:
+
+Memory Alloced: 1-98 
+Free: 99-1000
+Queue: 4(0/15)
+
+2nd Run:
+
+Memory Alloced: 1-

@@ -80,6 +80,10 @@ void free_pronode(pronode_t *);
 process_t *pop_longhigh_swap(disk_t **);
 /*Gets Swap Space Highest Priority*/
 int get_highest_pr_id(pronode_t *, int, int);
+/*Free whole of disk*/
+void free_disk(disk_t **);
+/*Free entirety of pronodes*/
+void fullyfreepronode(pronode_t **);
 
 /*-------MEMORY FUNCTIONS-------*/
 /*Initialises the memory struct*/
@@ -101,7 +105,9 @@ mem_t *restore_free_space(mem_t *, int, int, int);
 /*free node*/
 void free_node(node_t *);
 /*New Pronode*/
-pronode_t *new_pronode(process_t *pro);
+pronode_t *new_pronode(process_t *);
+/*Free whole mem*/
+void free_all_mem(mem_t **);
 
 /*--------ALGOS--------*/
 /*Adds based on First Algorithm*/
@@ -121,6 +127,8 @@ process_t *pop_from_queue_select(queue_t **, process_t *);
 process_t *pop_from_queue(queue_t **);
 /*Insert at Foot of Queue*/
 queue_t *insert_at_foot(queue_t *, process_t *);
+/*Free Queue*/
+void freequeue(queue_t **);
 
 /*Prints data out -- TEST FUNCTION*/
 void print_disk(disk_t *);

@@ -74,7 +74,7 @@ pronode_t *new_pronode(process_t *pro){
 void printswap(disk_t *disk){
   pronode_t *curr = disk->swap;
   while(curr != NULL){
-    //printf("Swap Space: Process - %d\n", curr->process->pr_id);
+    printf("Swap Space: Process - %d\n", curr->process->pr_id);
     curr = curr->next;
   }
 }
@@ -146,7 +146,6 @@ process_t *pop_process(disk_t **disk, int timer){
   pronode_t *swap = (*disk)->swap;
 
   if((*disk)->num_swap){
-    printswap(*disk);
     /*If there are processes in the swap space*/
     if((*disk)->num_ready && timer-ready->process->time_cr >= 0){
       /*If there are processes in both ready space and swap space*/
@@ -244,5 +243,21 @@ void add_to_swapspace(disk_t **disk, process_t *process, int timer){
   }
   curr->next = new_pronode(process);
   (*disk)->num_swap++;
-  printswap(*disk);
+}
+
+void free_disk(disk_t **di){
+  fullyfreepronode(&(*di)->ready);
+  fullyfreepronode(&(*di)->swap);
+  free(*di);
+}
+
+void fullyfreepronode(pronode_t **pn){
+  pronode_t *temp = *pn;
+  pronode_t *next;
+  while(temp!=NULL){
+    next = temp->next;
+    free(temp->process);
+    free(temp);
+    temp = next;
+  }
 }

@@ -93,9 +93,16 @@ process_t *pop_from_queue_select(queue_t **queue, process_t *pro){
 void printqueue(queue_t *q, int timer){
   pronode_t *qitem = q->head;
   while(qitem != NULL){
-    printf("Process: %d in q - NEEDS:%d RUN: %d SIZE:%d TIME:%d TIMEOD: %d \n",qitem->process->pr_id,
-  qitem->process->job_time, qitem->process->run_time,qitem->process->mem_size, timer, timer-qitem->process->time_memoryin);
+    printf("Process: %d in q - NEEDS:%d RUN: %d SIZE:%d TIME:%d TIMEOD: %d \n",
+    qitem->process->pr_id,  qitem->process->job_time, qitem->process->run_time,
+    qitem->process->mem_size, timer, timer-qitem->process->time_memoryin);
     qitem = qitem->next;
   }
   fflush(stdout);
+}
+
+void freequeue(queue_t **qt){
+  fullyfreepronode(&(*qt)->head);
+  fullyfreepronode(&(*qt)->foot);
+  free(*qt);
 }
