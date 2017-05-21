@@ -28,7 +28,6 @@ The port number is passed as an argument
 int main(int argc, char **argv)
 {
 	int sockfd, newsockfd, portno, clilen;
-	char buffer[256];
 	struct sockaddr_in serv_addr, cli_addr;
 	int n;
 
@@ -74,90 +73,109 @@ int main(int argc, char **argv)
 	/* Listen on socket - means we're ready to accept connections - 
 	 incoming connection requests will be queued */
 	
-	listen(sockfd,MAX_CLIENTS);
+	if(listen(sockfd,MAX_CLIENTS)==0){
+		printf("Listening\n");
+	}
+	else{
+		printf("Error\n");
+	}
 	
 	clilen = sizeof(cli_addr);
 
-    while(1){
-        newsockfd = accept(	sockfd, (struct sockaddr *) &cli_addr,
-                               &clilen);
-    }
+    while(1) {
+		newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+		if (!fork()){
+			n = 1;
+			/*Loop while connection is still alive*/
+			while(n!=0){
+				if (newsockfd < 0)
+				{
+					perror("ERROR on accept");
+					exit(1);
+				}
+				char buffer[256];
+				bzero(buffer, sizeof(buffer));
+				bzero(buffer,256);
+
+				/* Read characters from the connection,
+                    then process */
+
+				n = read(newsockfd,buffer,255);
+				char header[256];
+				char header2[5];
+				char payload[256];
+				char reply[256];
+				bzero(reply,256);
+				bzero(header,5);
+				bzero(payload,256);
+
+				sscanf(buffer,"%s%s",header, payload);
+				if(strcmp(header,PING)==0){
+					strcpy(reply,PONG);
+				}
+				else if(strcmp(header,PONG)==0){
+					strcpy(reply,ERRO);
+					strcat(reply, " reason: PONG messages are strictly "
+							"reserved for server responses.");
+				}
+				else if(strcmp(header, OKAY)==0){
+					strcpy(reply,ERRO);
+					strcat(reply, " reason: It is not okay to send OKAY "
+							"messages to the server, m'kay?");
+				}
+				else if (strcmp(header, ERRO)==0) {
+					strcpy(reply, ERRO);
+					strcat(reply, " reason: ERRO messages should not be sent "
+							"to the server");
+				}
+				else if (strcmp(header,SOLN)==0){
+					/*todo*/
+				}
+				else if (strcmp(header,WORK)==0){
+					/*todo*/
+				}
+				else if (strcmp(header,ABRT)==0){
+					/*todo*/
+					strcpy(reply, OKAY);
+				}
+				else{
+					/*todo*/
+
+				}
+				if (n < 0)
+				{
+					perror("ERROR reading from socket");
+					exit(1);
+				}
+
+				printf("Here is the message: %s\n",buffer);
+
+				n = write(newsockfd,reply,strlen(reply));
+
+				if (n < 0)
+				{
+					perror("ERROR writing to socket");
+					exit(1);
+				}
+
+				/* close socket */
+
+				close(newsockfd);
+				exit(0);
+			}
+		}
+		else{
+			close(newsockfd);
+		}
+	}
 
 	/* Accept a connection - block until a connection is ready to
 	 be accepted. Get back a new file descriptor to communicate on. */
 
-
-
-	if (newsockfd < 0) 
-	{
-		perror("ERROR on accept");
-		exit(1);
-	}
-	bzero(buffer, sizeof(buffer));
-	bzero(buffer,256);
-
-	/* Read characters from the connection,
-		then process */
-	
-	n = read(newsockfd,buffer,255);
-	char header[256];
-	char header2[5];
-	char payload[256];
-	char reply[256];
-	bzero(reply,256);
-	bzero(header,5);
-	bzero(payload,256);
-
-	sscanf(buffer,"%s%s",header, payload);
-	if(strcmp(header,PING)==0){
-		strcpy(reply,PONG);
-	}
-	else if(strcmp(header,PONG)==0){
-        strcpy(reply,ERRO);
-        strcat(reply, " reason: PONG messages are strictly reserved for server responses.");
-	}
-    else if(strcmp(header, OKAY)==0){
-        strcpy(reply,ERRO);
-        strcat(reply, " reason: It is not okay to send OKAY messages to the server, m'kay?");
-    }
-    else if (strcmp(header, ERRO)==0) {
-        strcpy(reply, ERRO);
-        strcat(reply, " reason: ERRO messages should not be sent to the server");
-    }
-    else if (strcmp(header,SOLN)==0){
-        /*todo*/
-    }
-    else if (strcmp(header,WORK)==0){
-        /*todo*/
-    }
-    else if (strcmp(header,ABRT)==0){
-        /*todo*/
-        strcpy(reply, OKAY);
-    }
-    else{
-        /*todo*/
-
-    }
-
-	if (n < 0) 
-	{
-		perror("ERROR reading from socket");
-		exit(1);
-	}
-	
-	printf("Here is the message: %s\n",buffer);
-
-	n = write(newsockfd,reply,strlen(reply));
-	
-	if (n < 0) 
-	{
-		perror("ERROR writing to socket");
-		exit(1);
-	}
-	
-	/* close socket */
-	
 	close(sockfd);
-	
 	return 0; 
+}
+
+void logActivity(char *reply){
+
 }
