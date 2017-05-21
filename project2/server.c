@@ -16,6 +16,7 @@ The port number is passed as an argument
 #define ABRT "ABRT"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <strings.h>
 #include <sys/types.h> 
@@ -23,13 +24,20 @@ The port number is passed as an argument
 #include <unistd.h>
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <time.h>
+#include <inttypes.h>
+
+void logActivity(char *, char *, int);
+void initLogFile();
+char * timestamp();
 
 
 int main(int argc, char **argv)
 {
 	int sockfd, newsockfd, portno, clilen;
 	struct sockaddr_in serv_addr, cli_addr;
-	int n;
+	int n, sockid = 0;
+    initLogFile();
 
 	if (argc < 2) 
 	{
@@ -38,7 +46,6 @@ int main(int argc, char **argv)
 	}
 
 	 /* Create TCP socket */
-	
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (sockfd < 0) 
@@ -84,6 +91,8 @@ int main(int argc, char **argv)
 
     while(1) {
 		newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+        sockid++;
+
 		if (!fork()){
 			n = 1;
 			/*Loop while connection is still alive*/
@@ -101,15 +110,17 @@ int main(int argc, char **argv)
                     then process */
 
 				n = read(newsockfd,buffer,255);
-				char header[256];
-				char header2[5];
-				char payload[256];
+				char header[5];
 				char reply[256];
 				bzero(reply,256);
-				bzero(header,5);
-				bzero(payload,256);
+                uint32_t difficulty;
+                char seed[65];
+                uint64_t start;
+                uint8_t worker_count;
 
-				sscanf(buffer,"%s%s",header, payload);
+
+				sscanf(buffer,"%s%"SCNu32"%s%"SCNu64"%"SCNu8"",header,
+                       &difficulty,seed,&start,&worker_count);
 				if(strcmp(header,PING)==0){
 					strcpy(reply,PONG);
 				}
@@ -147,8 +158,13 @@ int main(int argc, char **argv)
 					perror("ERROR reading from socket");
 					exit(1);
 				}
-
-				printf("Here is the message: %s\n",buffer);
+                char clntName[INET_ADDRSTRLEN];
+                if(inet_ntop(AF_INET,&cli_addr.sin_addr.s_addr,clntName,sizeof(clntName))!=NULL){
+                    logActivity(reply, clntName, ntohs(cli_addr.sin_port));
+                } else {
+                    perror("ERROR reading IP of client\n");
+                    exit(1);
+                }
 
 				n = write(newsockfd,reply,strlen(reply));
 
@@ -176,6 +192,31 @@ int main(int argc, char **argv)
 	return 0; 
 }
 
-void logActivity(char *reply){
+void logActivity(char *reply, char *ip, int sockid){
+    time_t ltime; /* calendar time */
+    ltime=time(NULL); /* get current cal time */
+    FILE *pfile;
+    pfile = fopen("log.txt", "a");
+    if (pfile!=NULL){
+        fprintf(pfile,"%s - IP: %s SID: %d %s\n",asctime(localtime(&ltime)), ip, sockid, reply);
+        fclose(pfile);
+    }
+    else{
+        perror("ERROR appending log file");
+        exit(1);
+    }
+}
 
+void initLogFile(){
+    FILE *pfile;
+    pfile = fopen("log.txt", "w");
+    if(pfile != NULL){
+        fclose(pfile);
+    }
+}
+
+char * timestamp()
+{
+
+    return ;
 }
