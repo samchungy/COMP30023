@@ -7,6 +7,7 @@ The port number is passed as an argument
 
 #define MAX_CLIENTS 100
 #define MAX_JOBS 10
+#define HEADER_SIZE 4
 #define PING "PING"
 #define PONG "PONG"
 #define OKAY "OKAY"
@@ -14,6 +15,7 @@ The port number is passed as an argument
 #define SOLN "SOLN"
 #define WORK "WORK"
 #define ABRT "ABRT"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -26,17 +28,25 @@ The port number is passed as an argument
 #include <netinet/in.h>
 #include <time.h>
 #include <inttypes.h>
+#include <pthread.h>
+
+struct con_handle{
+    struct sockaddr_in *sockadd;
+    int sockfd;
+};
 
 void logActivity(char *, char *, int);
 void initLogFile();
 char * timestamp();
-
+void *connection_handler(void *);
+struct con_handle *createcon_handle(struct sockaddr_in *, int);
 
 int main(int argc, char **argv)
 {
 	int sockfd, newsockfd, portno, clilen;
 	struct sockaddr_in serv_addr, cli_addr;
-	int n, sockid = 0;
+    struct con_handle *ch;
+	int sockid = 0;
     initLogFile();
 
 	if (argc < 2) 
@@ -88,108 +98,20 @@ int main(int argc, char **argv)
 	}
 	
 	clilen = sizeof(cli_addr);
+    pthread_t thread_id;
 
-    while(1) {
-		newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-        sockid++;
-
-		if (!fork()){
-			n = 1;
-			/*Loop while connection is still alive*/
-			while(n!=0){
-				if (newsockfd < 0)
-				{
-					perror("ERROR on accept");
-					exit(1);
-				}
-				char buffer[256];
-				bzero(buffer, sizeof(buffer));
-				bzero(buffer,256);
-
-				/* Read characters from the connection,
-                    then process */
-
-				n = read(newsockfd,buffer,255);
-				char header[5];
-				char reply[256];
-				bzero(reply,256);
-                uint32_t difficulty;
-                char seed[65];
-                uint64_t start;
-                uint8_t worker_count;
-
-
-				sscanf(buffer,"%s%"SCNu32"%s%"SCNu64"%"SCNu8"",header,
-                       &difficulty,seed,&start,&worker_count);
-				if(strcmp(header,PING)==0){
-					strcpy(reply,PONG);
-				}
-				else if(strcmp(header,PONG)==0){
-					strcpy(reply,ERRO);
-					strcat(reply, " reason: PONG messages are strictly "
-							"reserved for server responses.");
-				}
-				else if(strcmp(header, OKAY)==0){
-					strcpy(reply,ERRO);
-					strcat(reply, " reason: It is not okay to send OKAY "
-							"messages to the server, m'kay?");
-				}
-				else if (strcmp(header, ERRO)==0) {
-					strcpy(reply, ERRO);
-					strcat(reply, " reason: ERRO messages should not be sent "
-							"to the server");
-				}
-				else if (strcmp(header,SOLN)==0){
-					/*todo*/
-				}
-				else if (strcmp(header,WORK)==0){
-					/*todo*/
-				}
-				else if (strcmp(header,ABRT)==0){
-					/*todo*/
-					strcpy(reply, OKAY);
-				}
-				else{
-					/*todo*/
-
-				}
-				if (n < 0)
-				{
-					perror("ERROR reading from socket");
-					exit(1);
-				}
-                char clntName[INET_ADDRSTRLEN];
-                if(inet_ntop(AF_INET,&cli_addr.sin_addr.s_addr,clntName,sizeof(clntName))!=NULL){
-                    logActivity(reply, clntName, ntohs(cli_addr.sin_port));
-                } else {
-                    perror("ERROR reading IP of client\n");
-                    exit(1);
-                }
-
-				n = write(newsockfd,reply,strlen(reply));
-
-				if (n < 0)
-				{
-					perror("ERROR writing to socket");
-					exit(1);
-				}
-
-				/* close socket */
-
-				close(newsockfd);
-				exit(0);
-			}
-		}
-		else{
-			close(newsockfd);
-		}
-	}
-
-	/* Accept a connection - block until a connection is ready to
-	 be accepted. Get back a new file descriptor to communicate on. */
-
-	close(sockfd);
-	return 0; 
+    while(newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen)) {
+        printf("Accept Connection\n");
+        ch = createcon_handle(&cli_addr, newsockfd);
+        if (pthread_create(&thread_id, NULL, connection_handler, ch) != 0) {
+            perror("could not create thread");
+            return 1;
+        }
+        /*pthread_join( thread_id , NULL);*/
+        pthread_detach(thread_id);
+        puts("Handler assigned");
+    }
+    return 0;
 }
 
 void logActivity(char *reply, char *ip, int sockid){
@@ -215,8 +137,95 @@ void initLogFile(){
     }
 }
 
-char * timestamp()
-{
+struct con_handle *createcon_handle(struct sockaddr_in *sockadd, int sockfd){
+    struct con_handle *ch = malloc(sizeof(ch));
+    ch->sockadd = sockadd;
+    ch->sockfd = sockfd;
+    return ch;
+}
 
-    return ;
+
+void *connection_handler(void *connect_handle) {
+    /*Get the socket descriptor*/
+    int n;
+    struct con_handle *ch = (struct con_handle *)connect_handle;
+    int sock = ch->sockfd;
+    struct sockaddr_in cli_addr = *(ch->sockadd);
+    int read_size;
+    char header[5];
+    char reply[256];
+    char buffer[256];
+    uint32_t difficulty;
+    char seed[65];
+    uint64_t start;
+    uint8_t worker_count;
+
+        /*Receive a message from client*/
+        while(n = recv(sock,buffer,128,0) > 0) {
+            bzero(reply,256);
+            /*sscanf(buffer,"%s%"SCNu32"%s%"SCNu64"%"SCNu8"",header,
+                   &difficulty,seed,&start,&worker_count);*/
+            strncpy(header,buffer,HEADER_SIZE);
+            if(strcmp(header,"PING")==0){
+                strcpy(reply,PONG);
+            }
+            else if(strcmp(header,"PONG")==0){
+                strcpy(reply,ERRO);
+                strcat(reply, " reason: PONG messages are strictly "
+                        "reserved for server responses.");
+            }
+            else if(strcmp(header, OKAY)==0){
+                strcpy(reply,ERRO);
+                strcat(reply, " reason: It is not okay to send OKAY "
+                        "messages to the server, m'kay?");
+            }
+            else if (strcmp(header, ERRO)==0) {
+                strcpy(reply, ERRO);
+                strcat(reply, " reason: ERRO messages should not be sent "
+                        "to the server");
+            }
+            else if (strcmp(header,SOLN)==0){
+                /*todo*/
+            }
+            else if (strcmp(header,WORK)==0){
+                /*todo*/
+            }
+            else if (strcmp(header,ABRT)==0){
+                /*todo*/
+                strcpy(reply, OKAY);
+            }
+            else{
+                strcpy(reply, ERRO);
+                strcat(reply, " reason: ");
+                strcat(reply, header);
+                strcat(reply, " is an undefined protocol message."
+                        " Please enter a proper message.");
+
+            }
+
+            char clntName[INET_ADDRSTRLEN];
+            if(inet_ntop(AF_INET,&cli_addr.sin_addr.s_addr,clntName,
+                         sizeof(clntName))!=NULL){
+                logActivity(reply, clntName, ntohs(cli_addr.sin_port));
+            } else {
+                perror("ERROR reading IP of client\n");
+                exit(1);
+            }
+            strcat(reply,"\r\n");
+            n = write(sock,reply,strlen(reply));
+            bzero(buffer,256);
+
+        }
+
+        if(n == 0)
+        {
+            puts("Client disconnected");
+            fflush(stdout);
+        }
+        if(n < 0) {
+            perror("recv failed");
+        }
+        free(connect_handle);
+        close(sock);
+        return 0;
 }
