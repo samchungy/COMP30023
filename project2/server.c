@@ -1,52 +1,13 @@
-/* A simple server in the internet domain using TCP
-The port number is passed as an argument 
-
-
- To compile: gcc server.c -o server 
+/* Sam Chung (758 053) Project 2 Computer Systems
 */
 
-#define MAX_CLIENTS 100
-#define MAX_JOBS 10
-#define HEADER_SIZE 4
-#define PING "PING"
-#define PONG "PONG"
-#define OKAY "OKAY"
-#define ERRO "ERRO"
-#define SOLN "SOLN"
-#define WORK "WORK"
-#define ABRT "ABRT"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <strings.h>
-#include <sys/types.h> 
-#include <sys/socket.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <netinet/in.h>
-#include <time.h>
-#include <inttypes.h>
-#include <pthread.h>
-
-struct con_handle{
-    struct sockaddr_in *sockadd;
-    int sockfd;
-};
-
-void logActivity(char *, char *, int);
-void initLogFile();
-char * timestamp();
-void *connection_handler(void *);
-struct con_handle *createcon_handle(struct sockaddr_in *, int);
+#include "server.h"
 
 int main(int argc, char **argv)
 {
 	int sockfd, newsockfd, portno, clilen;
 	struct sockaddr_in serv_addr, cli_addr;
     struct con_handle *ch;
-	int sockid = 0;
     initLogFile();
 
 	if (argc < 2) 
@@ -100,7 +61,7 @@ int main(int argc, char **argv)
 	clilen = sizeof(cli_addr);
     pthread_t thread_id;
 
-    while(newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen)) {
+    while((newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen))){
         printf("Accept Connection\n");
         ch = createcon_handle(&cli_addr, newsockfd);
         if (pthread_create(&thread_id, NULL, connection_handler, ch) != 0) {
@@ -144,62 +105,99 @@ struct con_handle *createcon_handle(struct sockaddr_in *sockadd, int sockfd){
     return ch;
 }
 
+void scan_section(char msg[], char buffer[]){
+    bzero(msg,BUFFER_SIZE);
+    int i, b_size = strlen(buffer);
+    char c = '\0', last_c;
+    for (i=0;i<b_size;i++){
+        last_c = c;
+        c = buffer[i];
+        if (c == ' ' || (last_c == '\r' && c == '\n')){
+            if (c == ' '){
+                msg[i] = '\0';
+            }
+            else{
+                msg[i-1] = '\0';
+            }
+            /*End Case*/
+            break;
+        }
+        msg[i] = c;
+    }
+    if (i == b_size){
+        msg[i] = '\0';
+    }
+}
+
 
 void *connection_handler(void *connect_handle) {
     /*Get the socket descriptor*/
-    int n;
+    int n, b_size;
     struct con_handle *ch = (struct con_handle *)connect_handle;
     int sock = ch->sockfd;
     struct sockaddr_in cli_addr = *(ch->sockadd);
-    int read_size;
-    char header[5];
-    char reply[256];
-    char buffer[256];
-    uint32_t difficulty;
+    char reply[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE];
+    char msg[BUFFER_SIZE];
+    char diff[DIFFICULTY_SIZE+1];
     char seed[65];
     uint64_t start;
     uint8_t worker_count;
 
         /*Receive a message from client*/
-        while(n = recv(sock,buffer,128,0) > 0) {
-            bzero(reply,256);
-            /*sscanf(buffer,"%s%"SCNu32"%s%"SCNu64"%"SCNu8"",header,
-                   &difficulty,seed,&start,&worker_count);*/
-            strncpy(header,buffer,HEADER_SIZE);
-            if(strcmp(header,"PING")==0){
+        while((n = recv(sock,buffer,BUFFER_SIZE-1,0) > 0)) {
+            bzero(reply,BUFFER_SIZE);
+            bzero(msg,BUFFER_SIZE);
+            b_size = strlen(buffer);
+
+            /*Scan for Header Message*/
+            scan_section(msg, buffer);
+
+            if (strlen(msg) != HEADER_SIZE){
+                strcpy(reply,ERRO);
+                strcat(reply, " reason: Undefined protocol message.");
+            }
+            else if(strcmp(msg,PING)==0){
                 strcpy(reply,PONG);
             }
-            else if(strcmp(header,"PONG")==0){
+            else if(strcmp(msg,PONG)==0){
                 strcpy(reply,ERRO);
                 strcat(reply, " reason: PONG messages are strictly "
                         "reserved for server responses.");
             }
-            else if(strcmp(header, OKAY)==0){
+            else if(strcmp(msg, OKAY)==0){
                 strcpy(reply,ERRO);
                 strcat(reply, " reason: It is not okay to send OKAY "
                         "messages to the server, m'kay?");
             }
-            else if (strcmp(header, ERRO)==0) {
+            else if (strcmp(msg, ERRO)==0) {
                 strcpy(reply, ERRO);
                 strcat(reply, " reason: ERRO messages should not be sent "
                         "to the server");
             }
-            else if (strcmp(header,SOLN)==0){
+            else if (strcmp(msg,SOLN)==0){
+                if (b_size <= 5){
+                    strcpy(reply, ERRO);
+                    strcat(reply, " reason: SOLN requires more information");
+                }
+                else{
+                    /*Scan for Difficulty*/
+                    scan_section(msg,buffer);
+                    strcpy(reply, d);
+                    strcat(reply, " reason: SOLN requires more information");
+                }
+
+            }
+            else if (strcmp(msg,WORK)==0){
                 /*todo*/
             }
-            else if (strcmp(header,WORK)==0){
-                /*todo*/
-            }
-            else if (strcmp(header,ABRT)==0){
+            else if (strcmp(msg,ABRT)==0){
                 /*todo*/
                 strcpy(reply, OKAY);
             }
             else{
                 strcpy(reply, ERRO);
-                strcat(reply, " reason: ");
-                strcat(reply, header);
-                strcat(reply, " is an undefined protocol message."
-                        " Please enter a proper message.");
+                strcat(reply, " reason: Undefined protocol message.");
 
             }
 
