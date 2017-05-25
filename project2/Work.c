@@ -7,8 +7,9 @@
 #include "server.h"
 
 
-void * calculate_work(void *work){
-    struct worker w = *(work);
+void* calculate_work(void *work){
+    char reply[BUFFER_SIZE];
+    struct worker *w = (struct worker *)work;
     char alpha_s[5] = HEX, beta_s[7], concat_s[strlen(w->seed)+strlen(w->sol)+1];
     char log[BUFFER_SIZE];
     char *logbytes;
@@ -65,6 +66,10 @@ void * calculate_work(void *work){
     }
     sprintf(reply,"%s %s %s %s",SOLN, w->diff, w->seed, logbytes);
     free(logbytes);
+    logActivity("0.0.0.0", w->sock, reply);
+    strcat(reply,"\r\n");
+    write(w->sock,reply,strlen(reply));
+    return 0;
 }
 
 

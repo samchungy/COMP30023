@@ -54,7 +54,6 @@ int main(int argc, char **argv)
 	 incoming connection requests will be queued */
 	
 	if(listen(sockfd,MAX_CLIENTS)==0){
-		printf("Listening\n");
 	}
 	else{
 		printf("Error\n");
@@ -64,7 +63,6 @@ int main(int argc, char **argv)
     pthread_t thread_id;
 
     while((newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen))){
-        printf("Accept Connection\n");
         ch = createcon_handle(&cli_addr, newsockfd);
         if (pthread_create(&thread_id, NULL, connection_handler, ch) != 0) {
             perror("could not create thread");
@@ -72,7 +70,6 @@ int main(int argc, char **argv)
         }
         /*pthread_join( thread_id , NULL);*/
         pthread_detach(thread_id);
-        puts("Handler assigned");
     }
     return 0;
 }
@@ -92,17 +89,18 @@ struct con_handle *createcon_handle(struct sockaddr_in *sockadd, int sockfd){
     return ch;
 }
 
-struct worker *new_worker(char *diff, char *seed, char *sol){
-    struct worker *w = malloc(sizeof(w));
-    char *d = malloc(sizeof(diff));
-    char *s = malloc(sizeof(seed));
-    char *so = malloc(sizeof(sol));
+struct worker *new_worker(char *diff, char *seed, char *sol, int sock){
+    struct worker *w = malloc(sizeof(struct worker));
+    char *d = (char *)malloc((strlen(diff)+1)*sizeof(char));
+    char *s = (char *)malloc((strlen(seed)+1)*sizeof(char));
+    char *so = (char *)malloc((strlen(sol)+1)*sizeof(char));
     strcpy(d,diff);
     strcpy(s,seed);
     strcpy(so,sol);
     w->diff = d;
     w->seed = s;
     w->sol = so;
+    w->sock = sock;
     return w;
 }
 
@@ -201,7 +199,7 @@ void *connection_handler(void *connect_handle) {
 
             /*Scan for Header Message*/
             scan_section(msg, buffer, 0);
-            logActivity(clntName, sock, msg);
+            logActivity(clntName, sock, buffer);
 
             if (strlen(msg) != HEADER_SIZE){
                 erro_msg(reply," Undefined protocol message");
@@ -230,14 +228,12 @@ void *connection_handler(void *connect_handle) {
                         erro_msg(reply," invalid difficulty size");
                     }
                     else{
-                        printf("Correct Size Diff\n");
                         strcpy(diff, msg);
                         scan_section(msg,buffer,HEADER_SIZE+1+DIFFICULTY_HEX+1);
                         if ((strlen(msg) != SEED_SIZE)){
                             erro_msg(reply, " invalid seed size");
                         }
                         else{
-                            printf("Correct Size Seed\n");
                             strcpy(seed,msg);
                             scan_section(msg,buffer, HEADER_SIZE+1+
                                DIFFICULTY_HEX+1+SEED_SIZE+1);
@@ -252,15 +248,14 @@ void *connection_handler(void *connect_handle) {
                                 else{
                                     scan_section(msg,buffer, HEADER_SIZE+1+
                                   DIFFICULTY_HEX+1+SEED_SIZE+1+SOL_SIZE+1);
-                                    w = new_worker(diff,seed,sol);
+                                    w = new_worker(diff,seed,sol, sock);
                                     pthread_t workerthread;
-                                    if(pthread_create(&workerthread, NULL,
-                                                      calculate_soln, &w)) {
-                                        fprintf(stderr, "Error creating"
-                                                "thread\n");
+                                    if (pthread_create(&workerthread, NULL,
+                                                       calculate_work, w) != 0){
+                                        perror("could not create thread");
                                         return 1;
                                     }
-                                calculate_work(reply, diff, seed, sol);
+                                    pthread_detach(workerthread);
                                 }
                             }
 
@@ -281,18 +276,15 @@ void *connection_handler(void *connect_handle) {
                 erro_msg(reply," Undefined protocol message.");
 
             }
-            logActivity("0.0.0.0", sock, reply);
-            strcat(reply,"\r\n");
-            n = write(sock,reply,strlen(reply));
+            if(strlen(reply)!=0){
+                logActivity("0.0.0.0", sock, reply);
+                strcat(reply,"\r\n");
+                n = write(sock,reply,strlen(reply));
+            }
             bzero(buffer,256);
 
         }
 
-        if(n == 0)
-        {
-            puts("Client disconnected");
-            fflush(stdout);
-        }
         if(n < 0) {
             perror("recv failed");
         }

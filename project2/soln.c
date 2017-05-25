@@ -29,7 +29,6 @@ void calculate_soln(char *reply, char* diff, char* seed, char *sol){
     array_u[31] = 0x02;
     uint256_exp(clean_u,array_u,ex);
     uint256_mul(result_u,clean_u,beta_u);
-    print_uint256(result_u);
     logbytes = printbytes(result_u,32);
     strcpy(log,"TARGET: ");
     strcat(log,logbytes);

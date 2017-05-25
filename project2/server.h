@@ -50,6 +50,7 @@ struct worker{
     char *diff;
     char *seed;
     char *sol;
+    int sock;
 };
 void logActivity(char *, int, char *);
 void initLogFile();
@@ -59,6 +60,6 @@ void *connection_handler(void *);
 void erro_msg(char [], char *);
 struct con_handle *createcon_handle(struct sockaddr_in *, int);
 void logwork(char *);
-struct worker *new_worker(char *, char *, char *);
+struct worker *new_worker(char *, char *, char *, int);
 
 #endif //PROJECT2_SERVER_H

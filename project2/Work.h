@@ -11,6 +11,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "uint256.h"
-void *calculate_work(void *work);
+void* calculate_work(void *);
 char * get_solution(BYTE *);
 #endif //PROJECT2_WORK_H
