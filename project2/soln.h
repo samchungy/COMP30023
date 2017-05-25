@@ -12,5 +12,7 @@
 #include "uint256.h"
 
 void calculate_soln(char *, char *, char *, char*);
-void hex_to_uint256(BYTE *, char *);
+void hex_to_byte(int, BYTE *, char *);
+int doublehash(BYTE *, BYTE *, char *);
+char *printbytes (BYTE *, int);
 #endif //PROJECT2_SOLN_H

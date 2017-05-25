@@ -9,7 +9,13 @@
 #define MAX_JOBS 10
 #define HEADER_SIZE 4
 #define BUFFER_SIZE 256
+#define DIFFICULTY_HEX 8
 #define DIFFICULTY_SIZE 32
+#define ERROR_LEN 40
+#define SEED_SIZE 64
+#define SOL_SIZE 16
+#define BYTE_SIZE 32
+#define BIG_BYTE 40
 
 #define PING "PING"
 #define PONG "PONG"
@@ -18,6 +24,7 @@
 #define SOLN "SOLN"
 #define WORK "WORK"
 #define ABRT "ABRT"
+#define HEX "0x"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,11 +46,19 @@ struct con_handle{
     int sockfd;
 };
 
-void logActivity(char *, char *, int);
+struct worker{
+    char *diff;
+    char *seed;
+    char *sol;
+};
+void logActivity(char *, int, char *);
 void initLogFile();
 char * timestamp();
-void scan_section(char *, char *);
+void scan_section(char [], char [], int);
 void *connection_handler(void *);
+void erro_msg(char [], char *);
 struct con_handle *createcon_handle(struct sockaddr_in *, int);
+void logwork(char *);
+struct worker *new_worker(char *, char *, char *);
 
 #endif //PROJECT2_SERVER_H

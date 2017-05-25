@@ -10,5 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-
+#include "uint256.h"
+void *calculate_work(void *work);
+char * get_solution(BYTE *);
 #endif //PROJECT2_WORK_H

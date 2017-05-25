@@ -2,6 +2,8 @@
 */
 
 #include "server.h"
+#include "Work.h"
+#include "soln.h"
 
 int main(int argc, char **argv)
 {
@@ -75,21 +77,6 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void logActivity(char *reply, char *ip, int sockid){
-    time_t ltime; /* calendar time */
-    ltime=time(NULL); /* get current cal time */
-    FILE *pfile;
-    pfile = fopen("log.txt", "a");
-    if (pfile!=NULL){
-        fprintf(pfile,"%s - IP: %s SID: %d %s\n",asctime(localtime(&ltime)), ip, sockid, reply);
-        fclose(pfile);
-    }
-    else{
-        perror("ERROR appending log file");
-        exit(1);
-    }
-}
-
 void initLogFile(){
     FILE *pfile;
     pfile = fopen("log.txt", "w");
@@ -105,30 +92,87 @@ struct con_handle *createcon_handle(struct sockaddr_in *sockadd, int sockfd){
     return ch;
 }
 
-void scan_section(char msg[], char buffer[]){
+struct worker *new_worker(char *diff, char *seed, char *sol){
+    struct worker *w = malloc(sizeof(w));
+    char *d = malloc(sizeof(diff));
+    char *s = malloc(sizeof(seed));
+    char *so = malloc(sizeof(sol));
+    strcpy(d,diff);
+    strcpy(s,seed);
+    strcpy(so,sol);
+    w->diff = d;
+    w->seed = s;
+    w->sol = so;
+    return w;
+}
+
+void scan_section(char msg[], char buffer[], int start){
     bzero(msg,BUFFER_SIZE);
-    int i, b_size = strlen(buffer);
+    int i, j=0, b_size = strlen(buffer);
     char c = '\0', last_c;
-    for (i=0;i<b_size;i++){
+    for (i=start;i<b_size;i++){
         last_c = c;
         c = buffer[i];
         if (c == ' ' || (last_c == '\r' && c == '\n')){
             if (c == ' '){
-                msg[i] = '\0';
+                msg[j] = '\0';
             }
             else{
-                msg[i-1] = '\0';
+                msg[j-1] = '\0';
             }
             /*End Case*/
             break;
         }
-        msg[i] = c;
+        msg[j++] = c;
     }
-    if (i == b_size){
+    if (i == b_size && c != '\n'){
         msg[i] = '\0';
     }
 }
 
+void erro_msg(char reply[], char *error){
+    int i;
+    strcat(reply,ERRO);
+    strcat(reply,error);
+    for(i=strlen(reply);i<ERROR_LEN+HEADER_SIZE-1;i++){
+        reply[i] = ' ';
+    }
+    reply[i]='\0';
+}
+
+void logActivity(char *ip, int sockid, char *buff){
+    time_t rawtime;
+    struct tm * timeinfo;
+    time ( &rawtime );
+    timeinfo = localtime ( &rawtime );
+    FILE *pfile;
+    char time[strlen(asctime (timeinfo))];
+    strcpy(time,asctime (timeinfo));
+    time[strlen(asctime (timeinfo))-1]='\0';
+    pfile = fopen("log.txt", "a");
+    if (pfile!=NULL){
+        fprintf(pfile,"[%s]        %s(%d): %s\n",
+                time,ip,sockid, buff);
+        fclose(pfile);
+    }
+    else{
+        perror("ERROR appending log file");
+        exit(1);
+    }
+}
+
+void logwork(char *buff){
+    FILE *pfile;
+    pfile = fopen("log.txt", "a");
+    if (pfile!=NULL){
+        fprintf(pfile,"%s\n",buff);
+        fclose(pfile);
+    }
+    else{
+        perror("ERROR appending log file");
+        exit(1);
+    }
+}
 
 void *connection_handler(void *connect_handle) {
     /*Get the socket descriptor*/
@@ -136,55 +180,93 @@ void *connection_handler(void *connect_handle) {
     struct con_handle *ch = (struct con_handle *)connect_handle;
     int sock = ch->sockfd;
     struct sockaddr_in cli_addr = *(ch->sockadd);
+    char msg[BUFFER_SIZE];
+    char header[HEADER_SIZE+1];
     char reply[BUFFER_SIZE];
     char buffer[BUFFER_SIZE];
-    char msg[BUFFER_SIZE];
     char diff[DIFFICULTY_SIZE+1];
-    char seed[65];
-    uint64_t start;
-    uint8_t worker_count;
+    char sol[SOL_SIZE+1];
+    char seed[SEED_SIZE+1];
+    char clntName[INET_ADDRSTRLEN];
+
+    inet_ntop(AF_INET,&cli_addr.sin_addr.s_addr,clntName, sizeof(clntName));
+    logActivity(clntName, sock, "Session Started.");
 
         /*Receive a message from client*/
         while((n = recv(sock,buffer,BUFFER_SIZE-1,0) > 0)) {
             bzero(reply,BUFFER_SIZE);
             bzero(msg,BUFFER_SIZE);
+            struct worker *w;
             b_size = strlen(buffer);
 
             /*Scan for Header Message*/
-            scan_section(msg, buffer);
+            scan_section(msg, buffer, 0);
+            logActivity(clntName, sock, msg);
 
             if (strlen(msg) != HEADER_SIZE){
-                strcpy(reply,ERRO);
-                strcat(reply, " reason: Undefined protocol message.");
+                erro_msg(reply," Undefined protocol message");
             }
             else if(strcmp(msg,PING)==0){
                 strcpy(reply,PONG);
             }
             else if(strcmp(msg,PONG)==0){
-                strcpy(reply,ERRO);
-                strcat(reply, " reason: PONG messages are strictly "
-                        "reserved for server responses.");
+                erro_msg(reply," PONG msgs are for server responses");
             }
             else if(strcmp(msg, OKAY)==0){
-                strcpy(reply,ERRO);
-                strcat(reply, " reason: It is not okay to send OKAY "
-                        "messages to the server, m'kay?");
+                erro_msg(reply," Not Okay to sent OKAY");
             }
             else if (strcmp(msg, ERRO)==0) {
-                strcpy(reply, ERRO);
-                strcat(reply, " reason: ERRO messages should not be sent "
-                        "to the server");
+                erro_msg(reply," ERRO msg cannot be sent");
             }
-            else if (strcmp(msg,SOLN)==0){
-                if (b_size <= 5){
-                    strcpy(reply, ERRO);
-                    strcat(reply, " reason: SOLN requires more information");
+            else if (strcmp(msg,SOLN)==0 || strcmp(msg,WORK)==0){
+                strcpy(header,msg);
+                if (b_size <= 6){
+                    erro_msg(reply, " invalid msg");
                 }
                 else{
                     /*Scan for Difficulty*/
-                    scan_section(msg,buffer);
-                    strcpy(reply, d);
-                    strcat(reply, " reason: SOLN requires more information");
+                    scan_section(msg,buffer, HEADER_SIZE+1);
+                    if ((strlen(msg)) != DIFFICULTY_HEX){
+                        erro_msg(reply," invalid difficulty size");
+                    }
+                    else{
+                        printf("Correct Size Diff\n");
+                        strcpy(diff, msg);
+                        scan_section(msg,buffer,HEADER_SIZE+1+DIFFICULTY_HEX+1);
+                        if ((strlen(msg) != SEED_SIZE)){
+                            erro_msg(reply, " invalid seed size");
+                        }
+                        else{
+                            printf("Correct Size Seed\n");
+                            strcpy(seed,msg);
+                            scan_section(msg,buffer, HEADER_SIZE+1+
+                               DIFFICULTY_HEX+1+SEED_SIZE+1);
+                            strcpy(sol,msg);
+                            if ((strlen(msg)!=SOL_SIZE)){
+                                erro_msg(reply, " invalid sol size");
+                            }
+                            else{
+                                if((strcmp(header,SOLN)==0)){
+                                    calculate_soln(reply, diff, seed, sol);
+                                }
+                                else{
+                                    scan_section(msg,buffer, HEADER_SIZE+1+
+                                  DIFFICULTY_HEX+1+SEED_SIZE+1+SOL_SIZE+1);
+                                    w = new_worker(diff,seed,sol);
+                                    pthread_t workerthread;
+                                    if(pthread_create(&workerthread, NULL,
+                                                      calculate_soln, &w)) {
+                                        fprintf(stderr, "Error creating"
+                                                "thread\n");
+                                        return 1;
+                                    }
+                                calculate_work(reply, diff, seed, sol);
+                                }
+                            }
+
+                        }
+                    }
+
                 }
 
             }
@@ -196,19 +278,10 @@ void *connection_handler(void *connect_handle) {
                 strcpy(reply, OKAY);
             }
             else{
-                strcpy(reply, ERRO);
-                strcat(reply, " reason: Undefined protocol message.");
+                erro_msg(reply," Undefined protocol message.");
 
             }
-
-            char clntName[INET_ADDRSTRLEN];
-            if(inet_ntop(AF_INET,&cli_addr.sin_addr.s_addr,clntName,
-                         sizeof(clntName))!=NULL){
-                logActivity(reply, clntName, ntohs(cli_addr.sin_port));
-            } else {
-                perror("ERROR reading IP of client\n");
-                exit(1);
-            }
+            logActivity("0.0.0.0", sock, reply);
             strcat(reply,"\r\n");
             n = write(sock,reply,strlen(reply));
             bzero(buffer,256);
